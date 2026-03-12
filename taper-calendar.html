@@ -1,0 +1,1401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>catylstrx.com | Medication Taper Calendar</title>
+  <meta
+    name="description"
+    content="Create a medication taper calendar with step-based dose changes over time."
+  />
+  <style>
+    :root {
+      --bg: #f6f1e8;
+      --bg-soft: #fbf8f2;
+      --surface: rgba(255, 252, 247, 0.9);
+      --surface-strong: #fffdf8;
+      --text: #142332;
+      --muted: #5c6974;
+      --line: rgba(20, 35, 50, 0.12);
+      --line-strong: rgba(20, 35, 50, 0.2);
+      --accent: #b99257;
+      --accent-deep: #927241;
+      --shadow: 0 24px 60px rgba(20, 35, 50, 0.12);
+      --radius: 24px;
+      --step-1: #142332;
+      --step-2: #516270;
+      --step-3: #9a8d79;
+      --step-4: #d8c6a6;
+      --step-5: #efe5d4;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      min-height: 100%;
+    }
+
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(185, 146, 87, 0.18), transparent 28%),
+        radial-gradient(circle at bottom right, rgba(20, 35, 50, 0.08), transparent 28%),
+        linear-gradient(180deg, var(--bg-soft) 0%, var(--bg) 100%);
+      line-height: 1.5;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    button,
+    input,
+    select,
+    textarea {
+      font: inherit;
+    }
+
+    .page {
+      width: min(100% - 28px, 1180px);
+      margin: 0 auto;
+      padding: 24px 0 56px;
+    }
+
+    .topbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      padding: 8px 0 24px;
+    }
+
+    .wordmark {
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: clamp(1.2rem, 2.2vw, 1.45rem);
+      letter-spacing: 0.18em;
+      text-transform: lowercase;
+    }
+
+    .wordmark span {
+      color: var(--accent-deep);
+      font-style: italic;
+    }
+
+    .nav-link {
+      padding: 10px 14px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.45);
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1.05fr) minmax(280px, 0.95fr);
+      gap: 24px;
+      margin-bottom: 24px;
+    }
+
+    .panel {
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface);
+      backdrop-filter: blur(10px);
+      box-shadow: var(--shadow);
+    }
+
+    .hero-copy {
+      padding: clamp(26px, 4vw, 42px);
+    }
+
+    .eyebrow {
+      margin: 0 0 14px;
+      color: var(--accent-deep);
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+    }
+
+    h1,
+    h2,
+    h3 {
+      margin: 0;
+      font-family: Georgia, "Times New Roman", serif;
+      font-weight: 600;
+      letter-spacing: -0.03em;
+    }
+
+    h1 {
+      font-size: clamp(2.4rem, 5.8vw, 4.5rem);
+      line-height: 1;
+      max-width: 10ch;
+    }
+
+    .hero-copy p {
+      max-width: 54ch;
+      margin: 18px 0 0;
+      color: var(--muted);
+      font-size: 1rem;
+    }
+
+    .hero-side {
+      padding: 24px;
+      display: grid;
+      gap: 16px;
+      align-content: center;
+      background:
+        linear-gradient(180deg, rgba(255, 253, 248, 0.96) 0%, rgba(248, 242, 232, 0.92) 100%);
+    }
+
+    .mini-card {
+      padding: 16px 18px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.6);
+    }
+
+    .mini-card strong {
+      display: block;
+      margin-bottom: 6px;
+      font-size: 0.92rem;
+      color: var(--text);
+    }
+
+    .mini-card p {
+      margin: 0;
+      font-size: 0.92rem;
+      color: var(--muted);
+    }
+
+    .app-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(300px, 340px);
+      gap: 24px;
+      align-items: start;
+    }
+
+    .builder,
+    .summary,
+    .calendar {
+      padding: 24px;
+    }
+
+    .section-title {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+
+    .section-title p {
+      margin: 0;
+      font-size: 0.92rem;
+      color: var(--muted);
+    }
+
+    .meta-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+
+    .field {
+      display: grid;
+      gap: 7px;
+    }
+
+    .field label {
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .field input,
+    .field select,
+    .field textarea {
+      width: 100%;
+      padding: 13px 14px;
+      border: 1px solid var(--line-strong);
+      border-radius: 14px;
+      background: var(--surface-strong);
+      color: var(--text);
+      outline: none;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .field textarea {
+      min-height: 92px;
+      resize: vertical;
+    }
+
+    .field input:focus,
+    .field select:focus,
+    .field textarea:focus {
+      border-color: rgba(185, 146, 87, 0.9);
+      box-shadow: 0 0 0 4px rgba(185, 146, 87, 0.14);
+    }
+
+    .field-span-2 {
+      grid-column: span 2;
+    }
+
+    .steps {
+      display: grid;
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+
+    .step-card {
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.58);
+    }
+
+    .step-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .step-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 700;
+    }
+
+    .step-index {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--text);
+      color: #fff;
+      font-size: 0.85rem;
+    }
+
+    .step-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .step-preview {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: start;
+      padding-top: 12px;
+      border-top: 1px solid rgba(20, 35, 50, 0.08);
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    .step-preview strong {
+      display: block;
+      margin-bottom: 4px;
+      color: var(--text);
+      font-size: 0.82rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .step-preview p {
+      margin: 0;
+    }
+
+    .btn-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .btn {
+      border: 0;
+      border-radius: 999px;
+      padding: 13px 18px;
+      cursor: pointer;
+      transition: transform 0.2s ease, background 0.2s ease, color 0.2s ease;
+      font-weight: 700;
+    }
+
+    .btn:hover {
+      transform: translateY(-1px);
+    }
+
+    .btn-primary {
+      background: var(--text);
+      color: #fff9f0;
+    }
+
+    .btn-primary:hover {
+      background: #0f1b28;
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.72);
+      color: var(--text);
+      border: 1px solid var(--line);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.96);
+    }
+
+    .btn-accent {
+      background: var(--accent);
+      color: #fffdf8;
+    }
+
+    .btn-accent:hover {
+      background: var(--accent-deep);
+    }
+
+    .btn-remove {
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: transparent;
+      border: 1px solid var(--line);
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    .summary-stack {
+      display: grid;
+      gap: 14px;
+      position: sticky;
+      top: 20px;
+    }
+
+    .summary-note {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.94rem;
+    }
+
+    .totals {
+      display: grid;
+      gap: 10px;
+    }
+
+    .total-item {
+      padding: 14px 16px;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.58);
+    }
+
+    .total-item span {
+      display: block;
+      color: var(--muted);
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+
+    .plan-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .plan-item {
+      padding: 14px 16px;
+      border-left: 4px solid var(--accent);
+      border-radius: 0 16px 16px 0;
+      background: rgba(255, 255, 255, 0.62);
+    }
+
+    .plan-item h3 {
+      font-size: 1rem;
+      margin-bottom: 4px;
+    }
+
+    .plan-item p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    .calendar {
+      margin-top: 24px;
+      display: none;
+    }
+
+    .calendar.visible {
+      display: block;
+    }
+
+    .calendar-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 18px;
+      flex-wrap: wrap;
+    }
+
+    .calendar-head p {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 0.94rem;
+    }
+
+    .months {
+      display: grid;
+      gap: 22px;
+    }
+
+    .month {
+      padding: 20px;
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      background: rgba(255, 255, 255, 0.54);
+    }
+
+    .month h3 {
+      margin-bottom: 14px;
+      font-size: 1.5rem;
+    }
+
+    .calendar-grid {
+      border: 1px solid var(--line-strong);
+      border-radius: 18px;
+      overflow: hidden;
+      background: var(--surface-strong);
+    }
+
+    .day-heads,
+    .day-cells {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+    }
+
+    .day-heads {
+      background: var(--text);
+      color: #fffaf2;
+    }
+
+    .day-heads div {
+      padding: 12px 8px;
+      text-align: center;
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .day {
+      min-height: 132px;
+      padding: 8px;
+      border-right: 1px solid rgba(20, 35, 50, 0.08);
+      border-bottom: 1px solid rgba(20, 35, 50, 0.08);
+      background: rgba(255, 253, 248, 0.85);
+    }
+
+    .day:nth-child(7n) {
+      border-right: 0;
+    }
+
+    .day.empty {
+      background: rgba(20, 35, 50, 0.03);
+    }
+
+    .day-number {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+
+    .dose-chip {
+      border-radius: 12px;
+      padding: 8px 9px;
+      font-size: 0.73rem;
+      line-height: 1.35;
+      margin-bottom: 6px;
+      border: 1px solid transparent;
+    }
+
+    .dose-chip strong {
+      display: block;
+      margin-bottom: 2px;
+      font-size: 0.78rem;
+    }
+
+    .dose-chip small {
+      display: block;
+      opacity: 0.9;
+    }
+
+    .step-tone-0 {
+      background: var(--step-1);
+      color: #fff;
+      border-color: #0f1b28;
+    }
+
+    .step-tone-1 {
+      background: var(--step-2);
+      color: #fff;
+      border-color: #43515d;
+    }
+
+    .step-tone-2 {
+      background: var(--step-3);
+      color: #fffaf2;
+      border-color: #877961;
+    }
+
+    .step-tone-3 {
+      background: var(--step-4);
+      color: var(--text);
+      border-color: #c0aa84;
+    }
+
+    .step-tone-4 {
+      background: var(--step-5);
+      color: var(--text);
+      border-color: #dbc9ae;
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 16px;
+    }
+
+    .legend-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 10px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.66);
+      font-size: 0.86rem;
+      color: var(--muted);
+    }
+
+    .legend-swatch {
+      width: 14px;
+      height: 14px;
+      border-radius: 50%;
+      border: 1px solid rgba(20, 35, 50, 0.12);
+    }
+
+    .disclaimer {
+      margin-top: 14px;
+      padding: 14px 16px;
+      border: 1px solid rgba(146, 114, 65, 0.24);
+      border-radius: 16px;
+      background: rgba(255, 250, 241, 0.88);
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .footer {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+      padding-top: 24px;
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    @media (max-width: 980px) {
+      .app-grid,
+      .hero {
+        grid-template-columns: 1fr;
+      }
+
+      .summary-stack {
+        position: static;
+      }
+    }
+
+    @media (max-width: 680px) {
+      .page {
+        width: min(100% - 20px, 1180px);
+      }
+
+      .meta-grid,
+      .step-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .field-span-2 {
+        grid-column: auto;
+      }
+
+      .step-preview,
+      .calendar-head,
+      .topbar,
+      .footer {
+        display: grid;
+        grid-template-columns: 1fr;
+      }
+
+      .day {
+        min-height: 108px;
+      }
+    }
+
+    @media print {
+      body {
+        background: #fff;
+      }
+
+      .topbar,
+      .hero,
+      .builder,
+      .summary,
+      .calendar-head .btn-row,
+      .footer {
+        display: none !important;
+      }
+
+      .page {
+        width: 100%;
+        padding: 0;
+      }
+
+      .calendar,
+      .calendar.visible {
+        display: block;
+        border: 0;
+        box-shadow: none;
+        background: #fff;
+        padding: 0;
+      }
+
+      .month {
+        break-after: page;
+        border: 0;
+        padding: 0 0 12px;
+        background: #fff;
+      }
+
+      .month:last-child {
+        break-after: auto;
+      }
+
+      .calendar-grid {
+        border-color: #000;
+      }
+
+      .day-heads {
+        background: #000;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <header class="topbar">
+      <div class="wordmark">catylst<span>rx</span>.com</div>
+      <a class="nav-link" href="index.html">Back to home</a>
+    </header>
+
+    <section class="hero">
+      <div class="panel hero-copy">
+        <p class="eyebrow">Medication Planning Tool</p>
+        <h1>Build a taper calendar patients can actually follow.</h1>
+        <p>
+          Create a step-by-step medication schedule where the dose increases or decreases over time,
+          then turn it into a clear monthly calendar for printing or sharing.
+        </p>
+      </div>
+
+      <aside class="panel hero-side">
+        <div class="mini-card">
+          <strong>Designed for tapers</strong>
+          <p>Works for dose reductions, dose increases, or mixed step schedules across any date range.</p>
+        </div>
+        <div class="mini-card">
+          <strong>Built for clarity</strong>
+          <p>Each step gets a visible date range, a daily dose summary, and a calendar view for patients.</p>
+        </div>
+        <div class="mini-card">
+          <strong>Reminder</strong>
+          <p>This is a scheduling aid only. Final instructions should always come from the prescriber or pharmacist.</p>
+        </div>
+      </aside>
+    </section>
+
+    <section class="app-grid">
+      <section class="panel builder">
+        <div class="section-title">
+          <div>
+            <h2>Schedule Builder</h2>
+            <p>Enter the medication details, then add each taper step in order.</p>
+          </div>
+        </div>
+
+        <div class="meta-grid">
+          <div class="field">
+            <label for="medication-name">Medication Name</label>
+            <input id="medication-name" type="text" placeholder="e.g. Prednisone" />
+          </div>
+          <div class="field">
+            <label for="patient-name">Patient Name</label>
+            <input id="patient-name" type="text" placeholder="Optional" />
+          </div>
+          <div class="field">
+            <label for="start-date">Start Date</label>
+            <input id="start-date" type="date" />
+          </div>
+          <div class="field">
+            <label for="dose-unit">Dose Unit</label>
+            <select id="dose-unit">
+              <option value="mg">mg</option>
+              <option value="mcg">mcg</option>
+              <option value="mL">mL</option>
+              <option value="tablet">tablets</option>
+              <option value="capsule">capsules</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="strength">Strength Per Unit</label>
+            <input id="strength" type="number" min="0" step="0.01" placeholder="Optional" />
+          </div>
+          <div class="field">
+            <label for="dosage-form">Dosage Form</label>
+            <select id="dosage-form">
+              <option value="tablet">tablet</option>
+              <option value="capsule">capsule</option>
+            </select>
+          </div>
+          <div class="field field-span-2">
+            <label for="global-notes">Shared Instructions</label>
+            <textarea
+              id="global-notes"
+              placeholder="Optional details, such as 'take with food' or 'follow up after final step.'"
+            ></textarea>
+          </div>
+        </div>
+
+        <div class="section-title">
+          <div>
+            <h2>Taper Steps</h2>
+            <p>Each step should include a daily dose and how many days it lasts.</p>
+          </div>
+        </div>
+
+        <div id="steps" class="steps"></div>
+
+        <div class="btn-row">
+          <button id="add-step" class="btn btn-secondary" type="button">Add Step</button>
+          <button id="load-example" class="btn btn-secondary" type="button">Load Example</button>
+          <button id="reset-form" class="btn btn-secondary" type="button">Reset</button>
+          <button id="generate-calendar" class="btn btn-accent" type="button">Generate Calendar</button>
+        </div>
+      </section>
+
+      <aside class="summary-stack">
+        <section class="panel summary">
+          <div class="section-title">
+            <div>
+              <h2>Plan Summary</h2>
+              <p>Live preview of the taper timeline.</p>
+            </div>
+          </div>
+
+          <p class="summary-note" id="summary-note">
+            Add a medication, pick a start date, and enter at least one valid taper step.
+          </p>
+
+          <div class="totals" id="totals"></div>
+        </section>
+
+        <section class="panel summary">
+          <div class="section-title">
+            <div>
+              <h2>Step Timeline</h2>
+              <p>Date ranges update automatically as you edit the plan.</p>
+            </div>
+          </div>
+
+          <div class="plan-list" id="plan-list"></div>
+        </section>
+      </aside>
+    </section>
+
+    <section id="calendar-section" class="panel calendar" aria-live="polite">
+      <div class="calendar-head">
+        <div>
+          <h2 id="calendar-title">Medication Calendar</h2>
+          <p id="calendar-subtitle">A printable month-by-month view of the taper.</p>
+        </div>
+        <div class="btn-row">
+          <button id="print-calendar" class="btn btn-primary" type="button">Print</button>
+        </div>
+      </div>
+
+      <div id="months" class="months"></div>
+      <div id="legend" class="legend"></div>
+      <div class="disclaimer">
+        This calendar is a scheduling aid only and does not replace medical advice. Medication changes
+        should follow the prescribing clinician's or pharmacist's instructions.
+      </div>
+    </section>
+
+    <footer class="footer">
+      <div>&copy; 2026 catylstrx.com</div>
+      <a href="mailto:admin@catylstrx.com">admin@catylstrx.com</a>
+    </footer>
+  </div>
+  <script>
+    const state = {
+      nextStepId: 1,
+      steps: [],
+      schedule: []
+    };
+
+    const stepTones = ["step-tone-0", "step-tone-1", "step-tone-2", "step-tone-3", "step-tone-4"];
+    const weekdayLabels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    const monthLabels = [
+      "January",
+      "February",
+      "March",
+      "April",
+      "May",
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December"
+    ];
+
+    const medicationNameInput = document.getElementById("medication-name");
+    const patientNameInput = document.getElementById("patient-name");
+    const startDateInput = document.getElementById("start-date");
+    const doseUnitSelect = document.getElementById("dose-unit");
+    const strengthInput = document.getElementById("strength");
+    const dosageFormSelect = document.getElementById("dosage-form");
+    const globalNotesInput = document.getElementById("global-notes");
+    const stepsEl = document.getElementById("steps");
+    const totalsEl = document.getElementById("totals");
+    const summaryNoteEl = document.getElementById("summary-note");
+    const planListEl = document.getElementById("plan-list");
+    const calendarSectionEl = document.getElementById("calendar-section");
+    const calendarTitleEl = document.getElementById("calendar-title");
+    const calendarSubtitleEl = document.getElementById("calendar-subtitle");
+    const monthsEl = document.getElementById("months");
+    const legendEl = document.getElementById("legend");
+
+    function todayString() {
+      const today = new Date();
+      const year = today.getFullYear();
+      const month = String(today.getMonth() + 1).padStart(2, "0");
+      const day = String(today.getDate()).padStart(2, "0");
+      return year + "-" + month + "-" + day;
+    }
+
+    function parseLocalDate(value) {
+      if (!value) return null;
+      const parts = value.split("-").map(Number);
+      if (parts.length !== 3 || parts.some(Number.isNaN)) return null;
+      return new Date(parts[0], parts[1] - 1, parts[2]);
+    }
+
+    function dateKey(date) {
+      return (
+        date.getFullYear() +
+        "-" +
+        String(date.getMonth() + 1).padStart(2, "0") +
+        "-" +
+        String(date.getDate()).padStart(2, "0")
+      );
+    }
+
+    function addDays(date, amount) {
+      const next = new Date(date);
+      next.setDate(next.getDate() + amount);
+      return next;
+    }
+
+    function formatDate(date) {
+      return date.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric"
+      });
+    }
+
+    function formatCompact(value) {
+      const number = Number(value);
+      if (!Number.isFinite(number)) return "";
+      if (Math.abs(number - Math.round(number)) < 0.000001) return String(Math.round(number));
+      return number.toFixed(2).replace(/(\.\d*?[1-9])0+$/, "$1").replace(/\.0$/, "");
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
+
+    function unitLabel(unit, amount) {
+      if (unit === "tablet") return Math.abs(amount - 1) < 0.000001 ? "tablet" : "tablets";
+      if (unit === "capsule") return Math.abs(amount - 1) < 0.000001 ? "capsule" : "capsules";
+      return unit;
+    }
+
+    function dosageFormLabel(amount) {
+      const form = dosageFormSelect.value;
+      return Math.abs(amount - 1) < 0.000001 ? form : form + "s";
+    }
+
+    function doseDisplay(step) {
+      const dose = Number(step.dose);
+      if (!Number.isFinite(dose) || dose <= 0) return "Dose not set";
+      return formatCompact(dose) + " " + unitLabel(doseUnitSelect.value, dose);
+    }
+
+    function equivalentDisplay(step) {
+      const strength = Number(strengthInput.value);
+      const dose = Number(step.dose);
+      const unit = doseUnitSelect.value;
+      if (!Number.isFinite(strength) || strength <= 0 || !Number.isFinite(dose) || dose <= 0) return "";
+      if (unit === "tablet" || unit === "capsule") return "";
+      const count = dose / strength;
+      if (!Number.isFinite(count) || count <= 0) return "";
+      return formatCompact(count) + " " + dosageFormLabel(count);
+    }
+
+    function instructionDisplay(step) {
+      const parts = [doseDisplay(step)];
+      const equivalent = equivalentDisplay(step);
+      if (equivalent) parts.push("(" + equivalent + ")");
+      parts.push("daily");
+      if (step.notes && step.notes.trim()) parts.push("| " + step.notes.trim());
+      return parts.join(" ");
+    }
+
+    function validStep(step) {
+      return Number(step.dose) > 0 && Number(step.days) > 0;
+    }
+
+    function createStep(data) {
+      state.steps.push({
+        id: state.nextStepId++,
+        dose: data && data.dose ? data.dose : "",
+        days: data && data.days ? data.days : "",
+        notes: data && data.notes ? data.notes : ""
+      });
+    }
+
+    function resetState() {
+      state.nextStepId = 1;
+      state.steps = [];
+      state.schedule = [];
+    }
+
+    function seedDefaultStep() {
+      if (!state.steps.length) {
+        createStep();
+      }
+    }
+
+    function deriveTimeline() {
+      const start = parseLocalDate(startDateInput.value);
+      let cursor = start ? new Date(start) : null;
+
+      return state.steps.map(function (step, index) {
+        const isValid = validStep(step) && Boolean(cursor);
+        let range = "";
+        let startDate = null;
+        let endDate = null;
+
+        if (isValid) {
+          startDate = new Date(cursor);
+          endDate = addDays(cursor, Number(step.days) - 1);
+          range = formatDate(startDate) + " to " + formatDate(endDate);
+          cursor = addDays(endDate, 1);
+        }
+
+        return {
+          step: step,
+          index: index,
+          days: Number(step.days),
+          isValid: isValid,
+          startDate: startDate,
+          endDate: endDate,
+          range: range
+        };
+      });
+    }
+
+    function summaryTotals(timeline) {
+      const validItems = timeline.filter(function (item) {
+        return item.isValid;
+      });
+
+      if (!validItems.length) return null;
+
+      return {
+        totalDays: validItems.reduce(function (sum, item) {
+          return sum + item.days;
+        }, 0),
+        firstDate: validItems[0].startDate,
+        lastDate: validItems[validItems.length - 1].endDate
+      };
+    }
+
+    function renderSteps() {
+      const timeline = deriveTimeline();
+
+      stepsEl.innerHTML = state.steps
+        .map(function (step, index) {
+          const item = timeline[index];
+          return (
+            '<article class="step-card">' +
+            '<div class="step-head">' +
+            '<div class="step-label"><span class="step-index">' + (index + 1) + "</span>Step " + (index + 1) + "</div>" +
+            (state.steps.length > 1
+              ? '<button class="btn-remove" type="button" data-action="remove-step" data-id="' + step.id + '">Remove</button>'
+              : "") +
+            "</div>" +
+            '<div class="step-grid">' +
+            '<div class="field">' +
+            '<label for="dose-' + step.id + '">Daily Dose</label>' +
+            '<input id="dose-' + step.id + '" data-field="dose" data-id="' + step.id + '" type="number" min="0" step="0.01" placeholder="e.g. 20" value="' + escapeHtml(step.dose) + '" />' +
+            "</div>" +
+            '<div class="field">' +
+            '<label for="days-' + step.id + '">Days at This Dose</label>' +
+            '<input id="days-' + step.id + '" data-field="days" data-id="' + step.id + '" type="number" min="1" step="1" placeholder="e.g. 7" value="' + escapeHtml(step.days) + '" />' +
+            "</div>" +
+            '<div class="field field-span-2">' +
+            '<label for="notes-' + step.id + '">Step Notes</label>' +
+            '<input id="notes-' + step.id + '" data-field="notes" data-id="' + step.id + '" type="text" placeholder="Optional instruction for this step" value="' + escapeHtml(step.notes) + '" />' +
+            "</div>" +
+            "</div>" +
+            '<div class="step-preview">' +
+            "<div><strong>Instruction</strong><p>" + escapeHtml(instructionDisplay(step)) + "</p></div>" +
+            "<div><strong>Date Range</strong><p>" + escapeHtml(item.range || "Enter a start date and valid dose/duration") + "</p></div>" +
+            "</div>" +
+            "</article>"
+          );
+        })
+        .join("");
+    }
+
+    function renderSummary() {
+      const timeline = deriveTimeline();
+      const totals = summaryTotals(timeline);
+      const medName = medicationNameInput.value.trim() || "Medication";
+      const patientName = patientNameInput.value.trim();
+
+      if (!totals) {
+        summaryNoteEl.textContent = "Add a medication, pick a start date, and enter at least one valid taper step.";
+        totalsEl.innerHTML = "";
+      } else {
+        summaryNoteEl.textContent = patientName ? medName + " taper for " + patientName + "." : medName + " taper plan.";
+        totalsEl.innerHTML =
+          '<div class="total-item"><span>Total Duration</span>' + totals.totalDays + " days</div>" +
+          '<div class="total-item"><span>Start</span>' + formatDate(totals.firstDate) + "</div>" +
+          '<div class="total-item"><span>End</span>' + formatDate(totals.lastDate) + "</div>";
+      }
+
+      const items = timeline
+        .filter(function (item) {
+          return validStep(item.step);
+        })
+        .map(function (item) {
+          return (
+            '<article class="plan-item">' +
+            "<h3>Step " + (item.index + 1) + "</h3>" +
+            "<p>" + escapeHtml(instructionDisplay(item.step)) + "</p>" +
+            "<p>" + escapeHtml(item.range || "Date range pending") + "</p>" +
+            "</article>"
+          );
+        });
+
+      planListEl.innerHTML = items.length ? items.join("") : '<p class="summary-note">No valid taper steps yet.</p>';
+    }
+
+    function renderAll() {
+      renderSteps();
+      renderSummary();
+    }
+
+    function updateStep(id, field, value) {
+      state.steps = state.steps.map(function (step) {
+        if (step.id !== id) return step;
+        return Object.assign({}, step, { [field]: value });
+      });
+      renderAll();
+    }
+
+    function buildSchedule() {
+      const medication = medicationNameInput.value.trim();
+      const startDate = parseLocalDate(startDateInput.value);
+      const timeline = deriveTimeline();
+      const validItems = timeline.filter(function (item) {
+        return item.isValid;
+      });
+
+      if (!medication) {
+        alert("Please enter the medication name.");
+        return null;
+      }
+
+      if (!startDate) {
+        alert("Please choose a start date.");
+        return null;
+      }
+
+      if (!validItems.length) {
+        alert("Please add at least one taper step with a dose and number of days.");
+        return null;
+      }
+
+      const sharedNotes = globalNotesInput.value.trim();
+      const schedule = [];
+
+      validItems.forEach(function (item) {
+        for (let offset = 0; offset < item.days; offset += 1) {
+          const day = addDays(item.startDate, offset);
+          schedule.push({
+            key: dateKey(day),
+            date: day,
+            stepIndex: item.index,
+            medication: medication,
+            patient: patientNameInput.value.trim(),
+            doseText: doseDisplay(item.step),
+            equivalentText: equivalentDisplay(item.step),
+            notes: [item.step.notes ? item.step.notes.trim() : "", sharedNotes].filter(Boolean).join(" | ")
+          });
+        }
+      });
+
+      return schedule;
+    }
+
+    function monthRange(schedule) {
+      const first = schedule[0].date;
+      const last = schedule[schedule.length - 1].date;
+      return {
+        start: new Date(first.getFullYear(), first.getMonth(), 1),
+        end: new Date(last.getFullYear(), last.getMonth(), 1)
+      };
+    }
+
+    function renderLegend(timeline) {
+      const validItems = timeline.filter(function (item) {
+        return item.isValid;
+      });
+
+      legendEl.innerHTML = validItems
+        .map(function (item) {
+          const tone = stepTones[item.index % stepTones.length];
+          return (
+            '<div class="legend-item">' +
+            '<span class="legend-swatch ' + tone + '"></span>' +
+            "<span>Step " + (item.index + 1) + ": " + escapeHtml(doseDisplay(item.step)) + "</span>" +
+            "</div>"
+          );
+        })
+        .join("");
+    }
+
+    function renderCalendarMonths(schedule) {
+      const lookup = new Map();
+      schedule.forEach(function (entry) {
+        lookup.set(entry.key, entry);
+      });
+
+      const bounds = monthRange(schedule);
+      const cursor = new Date(bounds.start);
+      const monthMarkup = [];
+
+      while (cursor <= bounds.end) {
+        const year = cursor.getFullYear();
+        const month = cursor.getMonth();
+        const firstWeekday = new Date(year, month, 1).getDay();
+        const daysInMonth = new Date(year, month + 1, 0).getDate();
+        const cells = [];
+
+        for (let i = 0; i < firstWeekday; i += 1) {
+          cells.push('<div class="day empty"></div>');
+        }
+
+        for (let dayNumber = 1; dayNumber <= daysInMonth; dayNumber += 1) {
+          const currentDate = new Date(year, month, dayNumber);
+          const key = dateKey(currentDate);
+          const entry = lookup.get(key);
+          const tone = entry ? stepTones[entry.stepIndex % stepTones.length] : "";
+          const chip = entry
+            ? '<div class="dose-chip ' + tone + '">' +
+                "<strong>" + escapeHtml(entry.doseText) + "</strong>" +
+                (entry.equivalentText ? "<small>" + escapeHtml(entry.equivalentText) + "</small>" : "") +
+                "<small>" + escapeHtml(entry.medication) + "</small>" +
+                (entry.notes ? "<small>" + escapeHtml(entry.notes) + "</small>" : "") +
+              "</div>"
+            : "";
+
+          cells.push(
+            '<div class="day">' +
+              '<div class="day-number">' + dayNumber + "</div>" +
+              chip +
+            "</div>"
+          );
+        }
+
+        while (cells.length % 7 !== 0) {
+          cells.push('<div class="day empty"></div>');
+        }
+
+        monthMarkup.push(
+          '<section class="month">' +
+            "<h3>" + monthLabels[month] + " " + year + "</h3>" +
+            '<div class="calendar-grid">' +
+              '<div class="day-heads">' +
+                weekdayLabels.map(function (label) {
+                  return "<div>" + label + "</div>";
+                }).join("") +
+              "</div>" +
+              '<div class="day-cells">' + cells.join("") + "</div>" +
+            "</div>" +
+          "</section>"
+        );
+
+        cursor.setMonth(cursor.getMonth() + 1);
+      }
+
+      monthsEl.innerHTML = monthMarkup.join("");
+    }
+
+    function generateCalendar() {
+      const schedule = buildSchedule();
+      if (!schedule) return;
+
+      state.schedule = schedule;
+
+      const timeline = deriveTimeline();
+      const totals = summaryTotals(timeline);
+      const medication = medicationNameInput.value.trim();
+      const patient = patientNameInput.value.trim();
+
+      calendarTitleEl.textContent = medication + " Taper Calendar";
+      calendarSubtitleEl.textContent = patient
+        ? "Prepared for " + patient + " | " + formatDate(totals.firstDate) + " to " + formatDate(totals.lastDate)
+        : formatDate(totals.firstDate) + " to " + formatDate(totals.lastDate);
+
+      renderCalendarMonths(schedule);
+      renderLegend(timeline);
+      calendarSectionEl.classList.add("visible");
+      calendarSectionEl.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    function loadExample() {
+      medicationNameInput.value = "Prednisone";
+      patientNameInput.value = "";
+      startDateInput.value = todayString();
+      doseUnitSelect.value = "mg";
+      strengthInput.value = "5";
+      dosageFormSelect.value = "tablet";
+      globalNotesInput.value = "Take in the morning with food.";
+
+      resetState();
+      createStep({ dose: "40", days: "5", notes: "Take in the morning." });
+      createStep({ dose: "30", days: "5", notes: "Continue once daily." });
+      createStep({ dose: "20", days: "5", notes: "Continue once daily." });
+      createStep({ dose: "10", days: "5", notes: "Final step." });
+      calendarSectionEl.classList.remove("visible");
+      renderAll();
+    }
+
+    function resetForm() {
+      medicationNameInput.value = "";
+      patientNameInput.value = "";
+      startDateInput.value = todayString();
+      doseUnitSelect.value = "mg";
+      strengthInput.value = "";
+      dosageFormSelect.value = "tablet";
+      globalNotesInput.value = "";
+      resetState();
+      createStep();
+      monthsEl.innerHTML = "";
+      legendEl.innerHTML = "";
+      calendarSectionEl.classList.remove("visible");
+      renderAll();
+    }
+
+    document.getElementById("add-step").addEventListener("click", function () {
+      createStep();
+      renderAll();
+    });
+
+    document.getElementById("load-example").addEventListener("click", loadExample);
+    document.getElementById("reset-form").addEventListener("click", resetForm);
+    document.getElementById("generate-calendar").addEventListener("click", generateCalendar);
+    document.getElementById("print-calendar").addEventListener("click", function () {
+      window.print();
+    });
+
+    stepsEl.addEventListener("input", function (event) {
+      const target = event.target;
+      if (!(target instanceof HTMLElement)) return;
+      const field = target.getAttribute("data-field");
+      const id = Number(target.getAttribute("data-id"));
+      if (!field || !Number.isFinite(id)) return;
+      updateStep(id, field, target.value);
+    });
+
+    stepsEl.addEventListener("click", function (event) {
+      const target = event.target;
+      if (!(target instanceof HTMLElement)) return;
+      if (target.getAttribute("data-action") !== "remove-step") return;
+      const id = Number(target.getAttribute("data-id"));
+      if (!Number.isFinite(id)) return;
+      state.steps = state.steps.filter(function (step) {
+        return step.id !== id;
+      });
+      seedDefaultStep();
+      renderAll();
+    });
+
+    [
+      medicationNameInput,
+      patientNameInput,
+      startDateInput,
+      doseUnitSelect,
+      strengthInput,
+      dosageFormSelect,
+      globalNotesInput
+    ].forEach(function (element) {
+      element.addEventListener("input", renderAll);
+      element.addEventListener("change", renderAll);
+    });
+
+    resetForm();
+  </script>
+</body>
+</html>
