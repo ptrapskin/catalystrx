@@ -1,1401 +1,1068 @@
-<!DOCTYPE html>
+<<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>catylstrx.com | Medication Taper Calendar</title>
-  <meta
-    name="description"
-    content="Create a medication taper calendar with step-based dose changes over time."
-  />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>MedCal – Medication Taper Calendar</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet"/>
   <style>
-    :root {
-      --bg: #f6f1e8;
-      --bg-soft: #fbf8f2;
-      --surface: rgba(255, 252, 247, 0.9);
-      --surface-strong: #fffdf8;
-      --text: #142332;
-      --muted: #5c6974;
-      --line: rgba(20, 35, 50, 0.12);
-      --line-strong: rgba(20, 35, 50, 0.2);
-      --accent: #b99257;
-      --accent-deep: #927241;
-      --shadow: 0 24px 60px rgba(20, 35, 50, 0.12);
-      --radius: 24px;
-      --step-1: #142332;
-      --step-2: #516270;
-      --step-3: #9a8d79;
-      --step-4: #d8c6a6;
-      --step-5: #efe5d4;
-    }
-
-    * {
-      box-sizing: border-box;
-    }
-
-    html,
-    body {
-      margin: 0;
-      min-height: 100%;
-    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      font-family: Arial, Helvetica, sans-serif;
-      color: var(--text);
-      background:
-        radial-gradient(circle at top left, rgba(185, 146, 87, 0.18), transparent 28%),
-        radial-gradient(circle at bottom right, rgba(20, 35, 50, 0.08), transparent 28%),
-        linear-gradient(180deg, var(--bg-soft) 0%, var(--bg) 100%);
-      line-height: 1.5;
+      font-family: 'DM Sans', sans-serif;
+      background: #f9f7f7;
+      color: #112d4e;
+      min-height: 100vh;
     }
 
-    a {
-      color: inherit;
-      text-decoration: none;
+    /* ── Header ─────────────────────────── */
+    header {
+      background: #112d4e;
+      color: #fff;
+      padding: 16px 28px;
+      display: flex; align-items: center; gap: 12px;
+    }
+    .logo-box {
+      width: 38px; height: 38px;
+      background: rgba(255,255,255,0.15);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; flex-shrink: 0;
+    }
+    header h1 { font-family: 'DM Serif Display', serif; font-size: 1.5rem; font-weight: 400; }
+    header .sub { font-size: 0.76rem; opacity: 0.6; font-weight: 300; }
+
+    /* ── Disclaimer banner ───────────────── */
+    .disclaimer-banner {
+      background: #dbe2ef;
+      border-bottom: 2px solid #3f72af;
+      padding: 8px 28px;
+      font-size: 0.75rem; color: #112d4e; line-height: 1.5;
+      display: flex; gap: 8px; align-items: flex-start;
+    }
+    .disclaimer-banner .di { flex-shrink: 0; margin-top: 1px; }
+
+    /* ── Layout ──────────────────────────── */
+    .wrap { max-width: 960px; margin: 0 auto; padding: 24px 18px 60px; }
+
+    .card {
+      background: #fff;
+      border: 1px solid #dbe2ef;
+      border-radius: 8px;
+      padding: 24px 26px;
+      margin-bottom: 22px;
+    }
+    .card-title {
+      font-family: 'DM Serif Display', serif;
+      font-size: 1.1rem; font-weight: 400; color: #112d4e;
+      display: flex; align-items: center; gap: 8px;
+      padding-bottom: 14px; border-bottom: 1px solid #dbe2ef; margin-bottom: 18px;
     }
 
-    button,
-    input,
-    select,
-    textarea {
-      font: inherit;
-    }
-
-    .page {
-      width: min(100% - 28px, 1180px);
-      margin: 0 auto;
-      padding: 24px 0 56px;
-    }
-
-    .topbar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 16px;
-      padding: 8px 0 24px;
-    }
-
-    .wordmark {
-      font-family: Georgia, "Times New Roman", serif;
-      font-size: clamp(1.2rem, 2.2vw, 1.45rem);
-      letter-spacing: 0.18em;
-      text-transform: lowercase;
-    }
-
-    .wordmark span {
-      color: var(--accent-deep);
-      font-style: italic;
-    }
-
-    .nav-link {
-      padding: 10px 14px;
-      border: 1px solid var(--line);
-      border-radius: 999px;
-      background: rgba(255, 255, 255, 0.45);
-      color: var(--muted);
-      font-size: 0.9rem;
-    }
-
-    .hero {
-      display: grid;
-      grid-template-columns: minmax(0, 1.05fr) minmax(280px, 0.95fr);
-      gap: 24px;
-      margin-bottom: 24px;
-    }
-
-    .panel {
-      border: 1px solid var(--line);
-      border-radius: var(--radius);
-      background: var(--surface);
-      backdrop-filter: blur(10px);
-      box-shadow: var(--shadow);
-    }
-
-    .hero-copy {
-      padding: clamp(26px, 4vw, 42px);
-    }
-
-    .eyebrow {
-      margin: 0 0 14px;
-      color: var(--accent-deep);
-      font-size: 0.78rem;
-      font-weight: 700;
-      letter-spacing: 0.16em;
-      text-transform: uppercase;
-    }
-
-    h1,
-    h2,
-    h3 {
-      margin: 0;
-      font-family: Georgia, "Times New Roman", serif;
-      font-weight: 600;
-      letter-spacing: -0.03em;
-    }
-
-    h1 {
-      font-size: clamp(2.4rem, 5.8vw, 4.5rem);
-      line-height: 1;
-      max-width: 10ch;
-    }
-
-    .hero-copy p {
-      max-width: 54ch;
-      margin: 18px 0 0;
-      color: var(--muted);
-      font-size: 1rem;
-    }
-
-    .hero-side {
-      padding: 24px;
-      display: grid;
-      gap: 16px;
-      align-content: center;
-      background:
-        linear-gradient(180deg, rgba(255, 253, 248, 0.96) 0%, rgba(248, 242, 232, 0.92) 100%);
-    }
-
-    .mini-card {
-      padding: 16px 18px;
-      border: 1px solid var(--line);
-      border-radius: 18px;
-      background: rgba(255, 255, 255, 0.6);
-    }
-
-    .mini-card strong {
-      display: block;
-      margin-bottom: 6px;
-      font-size: 0.92rem;
-      color: var(--text);
-    }
-
-    .mini-card p {
-      margin: 0;
-      font-size: 0.92rem;
-      color: var(--muted);
-    }
-
-    .app-grid {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) minmax(300px, 340px);
-      gap: 24px;
-      align-items: start;
-    }
-
-    .builder,
-    .summary,
-    .calendar {
-      padding: 24px;
-    }
-
-    .section-title {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 16px;
-      margin-bottom: 18px;
-    }
-
-    .section-title p {
-      margin: 0;
-      font-size: 0.92rem;
-      color: var(--muted);
-    }
-
-    .meta-grid {
-      display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-      gap: 14px;
-      margin-bottom: 18px;
-    }
-
-    .field {
-      display: grid;
-      gap: 7px;
-    }
+    /* ── Meta row ────────────────────────── */
+    .meta-row { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+    @media(max-width:600px){ .meta-row { grid-template-columns: 1fr 1fr; } }
+    @media(max-width:380px){ .meta-row { grid-template-columns: 1fr; } }
 
     .field label {
-      font-size: 0.78rem;
-      font-weight: 700;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: var(--muted);
+      display: block; font-size: 0.68rem; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.5px; color: #4e6d8e; margin-bottom: 4px;
+    }
+    .field input {
+      width: 100%; padding: 9px 11px;
+      border: 1.5px solid #dbe2ef; border-radius: 6px;
+      font-family: 'DM Sans', sans-serif; font-size: 0.88rem; color: #112d4e;
+      background: #fff; outline: none;
+      transition: border-color 0.15s;
+    }
+    .field input:focus { border-color: #3f72af; }
+
+    /* ── Steps table ─────────────────────── */
+    .taper-label {
+      font-size: 0.68rem; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 0.5px; color: #4e6d8e; margin-bottom: 8px;
     }
 
-    .field input,
-    .field select,
-    .field textarea {
-      width: 100%;
-      padding: 13px 14px;
-      border: 1px solid var(--line-strong);
-      border-radius: 14px;
-      background: var(--surface-strong);
-      color: var(--text);
-      outline: none;
-      transition: border-color 0.2s ease, box-shadow 0.2s ease;
-    }
-
-    .field textarea {
-      min-height: 92px;
-      resize: vertical;
-    }
-
-    .field input:focus,
-    .field select:focus,
-    .field textarea:focus {
-      border-color: rgba(185, 146, 87, 0.9);
-      box-shadow: 0 0 0 4px rgba(185, 146, 87, 0.14);
-    }
-
-    .field-span-2 {
-      grid-column: span 2;
-    }
-
-    .steps {
-      display: grid;
-      gap: 14px;
-      margin-bottom: 18px;
-    }
+    .steps-table { width: 100%; border-collapse: separate; border-spacing: 0 8px; margin-bottom: 10px; }
+    .steps-table thead { display: none; }
+    .step-row td { padding: 0; vertical-align: top; }
 
     .step-card {
-      padding: 18px;
-      border: 1px solid var(--line);
-      border-radius: 18px;
-      background: rgba(255, 255, 255, 0.58);
+      border: 1px solid #dbe2ef;
+      border-radius: 8px;
+      padding: 10px;
+      background: #f9f7f7;
     }
-
-    .step-head {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
+    .step-card-top {
+      display: grid;
+      grid-template-columns: 28px minmax(0, 1fr) minmax(88px, 104px) minmax(118px, 136px);
       gap: 10px;
-      margin-bottom: 14px;
+      align-items: start;
+    }
+    .step-card-bottom {
+      display: grid;
+      grid-template-columns: minmax(220px, 1fr) minmax(110px, 150px) 40px;
+      gap: 10px;
+      align-items: start;
+      margin-top: 8px;
+    }
+    .step-field-label {
+      display: block;
+      font-size: 0.63rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.35px;
+      color: #4e6d8e;
+      margin-bottom: 4px;
+    }
+    .step-field.compact .step-field-label { text-align: center; }
+    .step-field.compact { text-align: center; }
+    .step-actions {
+      display: flex;
+      justify-content: flex-end;
+      align-items: end;
+      height: 100%;
     }
 
-    .step-label {
-      display: inline-flex;
+    .step-row input[type=number] {
+      width: 100%; padding: 7px 9px;
+      border: 1.5px solid #dbe2ef; border-radius: 6px;
+      font-family: 'DM Sans', sans-serif; font-size: 0.88rem; color: #112d4e;
+      background: #fff; outline: none;
+      transition: border-color 0.15s; -moz-appearance: textfield;
+    }
+    .step-row input[type=number]::-webkit-outer-spin-button,
+    .step-row input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; }
+    .step-row input[type=number]:focus { border-color: #3f72af; }
+
+    .time-dose-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+      gap: 7px;
+      min-width: 0;
+    }
+    .time-dose-item {
+      border: 1px solid #dbe2ef;
+      border-radius: 6px;
+      background: #fff;
+      padding: 6px 8px;
+      min-width: 0;
+    }
+    .time-dose-top {
+      display: flex;
       align-items: center;
-      gap: 8px;
-      font-weight: 700;
+      gap: 6px;
+      font-size: 0.78rem;
+      color: #112d4e;
+      margin-bottom: 5px;
+      white-space: nowrap;
     }
-
-    .step-index {
-      width: 28px;
-      height: 28px;
-      border-radius: 50%;
+    .time-dose-top input { accent-color: #3f72af; }
+    .time-dose-dose {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .time-dose-dose input[type=number] {
+      padding: 6px 8px;
+      font-size: 0.82rem;
+    }
+    .time-dose-dose .unit {
+      font-size: 0.72rem;
+      color: #4e6d8e;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .daily-dose-badge {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      background: var(--text);
-      color: #fff;
-      font-size: 0.85rem;
-    }
-
-    .step-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-      margin-bottom: 12px;
-    }
-
-    .step-preview {
-      display: flex;
-      justify-content: space-between;
-      gap: 12px;
-      align-items: start;
-      padding-top: 12px;
-      border-top: 1px solid rgba(20, 35, 50, 0.08);
-      color: var(--muted);
-      font-size: 0.92rem;
-    }
-
-    .step-preview strong {
-      display: block;
-      margin-bottom: 4px;
-      color: var(--text);
+      min-height: 32px;
+      padding: 5px 9px;
+      border-radius: 6px;
+      border: 1.5px solid #dbe2ef;
+      background: #f0f4f9;
+      color: #112d4e;
       font-size: 0.82rem;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
+      font-weight: 700;
+      line-height: 1.15;
     }
 
-    .step-preview p {
-      margin: 0;
+    .preview-text {
+      display: inline-block;
+      font-size: 0.70rem;
+      color: #4e6d8e;
+      line-height: 1.3;
+      text-align: left;
+      white-space: normal;
+    }
+    .preview-line { margin-bottom: 2px; }
+
+    .step-num {
+      width: 24px; height: 24px; border-radius: 50%;
+      background: #3f72af; color: #fff;
+      font-size: 0.7rem; font-weight: 700;
+      display: inline-flex; align-items: center; justify-content: center;
     }
 
-    .btn-row {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
+    .tablets-badge {
+      display: inline-block; background: #dbe2ef; color: #112d4e;
+      border: 1px solid #b0bfd4; border-radius: 5px;
+      padding: 4px 8px; font-size: 0.76rem; font-weight: 600;
+      min-width: 74px; text-align: center; white-space: nowrap;
     }
+    .tablets-badge.warn { background: #e8edf4; border-style: dashed; }
+
+    .date-range-badge { font-size: 0.72rem; color: #4e6d8e; white-space: nowrap; display: inline-block; padding-top: 7px; }
+
+    .btn-del {
+      background: none; border: 1px solid #dbe2ef; border-radius: 6px;
+      color: #4e6d8e; cursor: pointer; font-size: 0.8rem; padding: 6px 9px;
+      line-height: 1; transition: background 0.12s;
+    }
+    .btn-del:hover { background: #dbe2ef; }
+
+    .taper-footer { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
 
     .btn {
-      border: 0;
-      border-radius: 999px;
-      padding: 13px 18px;
-      cursor: pointer;
-      transition: transform 0.2s ease, background 0.2s ease, color 0.2s ease;
-      font-weight: 700;
+      padding: 9px 18px; border-radius: 6px;
+      font-family: 'DM Sans', sans-serif; font-size: 0.86rem; font-weight: 600;
+      cursor: pointer; border: none; transition: background 0.12s;
     }
+    .btn-primary { background: #3f72af; color: #fff; }
+    .btn-primary:hover { background: #112d4e; }
+    .btn-outline { background: #fff; color: #112d4e; border: 1.5px solid #3f72af; }
+    .btn-outline:hover { background: #f0f4f9; }
+    .btn-ghost { background: #fff; color: #4e6d8e; border: 1.5px solid #dbe2ef; }
+    .btn-ghost:hover { background: #f0f4f9; }
+    .btn-print { background: #3f72af; color: #fff; }
+    .btn-print:hover { background: #112d4e; }
 
-    .btn:hover {
-      transform: translateY(-1px);
+    .summary-bar {
+      background: #dbe2ef; border: 1px solid #b0bfd4; border-radius: 6px;
+      padding: 10px 14px; font-size: 0.82rem; color: #112d4e; margin-top: 14px;
+      display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
     }
+    .summary-bar strong { font-weight: 600; }
 
-    .btn-primary {
-      background: var(--text);
-      color: #fff9f0;
+    /* ── Calendar ────────────────────────── */
+    #cal-section { display: none; }
+    #cal-section.visible { display: block; }
+
+    .cal-top {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 12px; flex-wrap: wrap; gap: 10px;
     }
-
-    .btn-primary:hover {
-      background: #0f1b28;
+    .cal-top h2 {
+      font-family: 'DM Serif Display', serif;
+      font-size: 1.2rem; font-weight: 400; color: #112d4e;
     }
-
-    .btn-secondary {
-      background: rgba(255, 255, 255, 0.72);
-      color: var(--text);
-      border: 1px solid var(--line);
-    }
-
-    .btn-secondary:hover {
-      background: rgba(255, 255, 255, 0.96);
-    }
-
-    .btn-accent {
-      background: var(--accent);
-      color: #fffdf8;
-    }
-
-    .btn-accent:hover {
-      background: var(--accent-deep);
-    }
-
-    .btn-remove {
-      padding: 8px 12px;
-      border-radius: 999px;
-      background: transparent;
-      border: 1px solid var(--line);
-      color: var(--muted);
-      font-weight: 600;
-    }
-
-    .summary-stack {
-      display: grid;
-      gap: 14px;
-      position: sticky;
-      top: 20px;
-    }
-
-    .summary-note {
-      margin: 0;
-      color: var(--muted);
-      font-size: 0.94rem;
-    }
-
-    .totals {
-      display: grid;
-      gap: 10px;
-    }
-
-    .total-item {
-      padding: 14px 16px;
-      border: 1px solid var(--line);
-      border-radius: 16px;
-      background: rgba(255, 255, 255, 0.58);
-    }
-
-    .total-item span {
-      display: block;
-      color: var(--muted);
-      font-size: 0.78rem;
-      font-weight: 700;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      margin-bottom: 4px;
-    }
-
-    .plan-list {
-      display: grid;
-      gap: 10px;
-    }
-
-    .plan-item {
-      padding: 14px 16px;
-      border-left: 4px solid var(--accent);
-      border-radius: 0 16px 16px 0;
-      background: rgba(255, 255, 255, 0.62);
-    }
-
-    .plan-item h3 {
-      font-size: 1rem;
-      margin-bottom: 4px;
-    }
-
-    .plan-item p {
-      margin: 0;
-      color: var(--muted);
-      font-size: 0.92rem;
-    }
-
-    .calendar {
-      margin-top: 24px;
-      display: none;
-    }
-
-    .calendar.visible {
-      display: block;
-    }
-
-    .calendar-head {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 14px;
-      margin-bottom: 18px;
-      flex-wrap: wrap;
-    }
-
-    .calendar-head p {
-      margin: 8px 0 0;
-      color: var(--muted);
-      font-size: 0.94rem;
-    }
-
-    .months {
-      display: grid;
-      gap: 22px;
-    }
-
-    .month {
-      padding: 20px;
-      border: 1px solid var(--line);
-      border-radius: 20px;
-      background: rgba(255, 255, 255, 0.54);
-    }
-
-    .month h3 {
-      margin-bottom: 14px;
-      font-size: 1.5rem;
-    }
-
-    .calendar-grid {
-      border: 1px solid var(--line-strong);
-      border-radius: 18px;
-      overflow: hidden;
-      background: var(--surface-strong);
-    }
-
-    .day-heads,
-    .day-cells {
-      display: grid;
-      grid-template-columns: repeat(7, minmax(0, 1fr));
-    }
-
-    .day-heads {
-      background: var(--text);
-      color: #fffaf2;
-    }
-
-    .day-heads div {
-      padding: 12px 8px;
+    .cal-nav { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; justify-content: flex-end; }
+    .months-container { display: flex; flex-direction: column; gap: 18px; }
+    .month-panel { background: #fff; }
+    .month-title {
+      font-family: 'DM Serif Display', serif;
+      font-size: 1.65rem;
+      font-weight: 400;
+      color: #112d4e;
       text-align: center;
-      font-size: 0.78rem;
-      font-weight: 700;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
+      margin: 0 0 12px;
     }
-
-    .day {
-      min-height: 132px;
-      padding: 8px;
-      border-right: 1px solid rgba(20, 35, 50, 0.08);
-      border-bottom: 1px solid rgba(20, 35, 50, 0.08);
-      background: rgba(255, 253, 248, 0.85);
+    .cal-nav button, .shade-toggle-btn {
+      background: #fff; border: 1.5px solid #dbe2ef; border-radius: 6px;
+      padding: 6px 14px; font-family: 'DM Sans', sans-serif; font-size: 0.82rem;
+      font-weight: 500; cursor: pointer; color: #112d4e; transition: background 0.12s;
     }
-
-    .day:nth-child(7n) {
-      border-right: 0;
+    .cal-nav button:hover, .shade-toggle-btn:hover { background: #f0f4f9; }
+    .nav-arrow { min-width: 74px; }
+    .shade-toggle-btn[aria-pressed='true'] {
+      background: #3f72af;
+      color: #fff;
+      border-color: #3f72af;
     }
+    .cal-grid { background: #fff; border: 1.5px solid #b0bfd4; border-radius: 6px; overflow: hidden; }
+    .day-heads { display: grid; grid-template-columns: repeat(7,1fr); background: #112d4e; color: #fff; }
+    .day-heads div { padding: 9px 0; text-align: center; font-size: 0.7rem; font-weight: 600; letter-spacing: 0.4px; text-transform: uppercase; }
+    .cal-body { display: grid; grid-template-columns: repeat(7,1fr); }
 
-    .day.empty {
-      background: rgba(20, 35, 50, 0.03);
-    }
+    .cell { border-right: 1px solid #dbe2ef; border-bottom: 1px solid #dbe2ef; min-height: 132px; padding: 6px; }
+    .cell:nth-child(7n) { border-right: none; }
+    .cell.empty { background: #f9f7f7; }
+    .cell.today-cell { background: #edf1f7; }
 
-    .day-number {
-      font-size: 0.8rem;
-      font-weight: 700;
-      color: var(--muted);
-      margin-bottom: 6px;
-    }
+    .dnum { font-size: 0.76rem; font-weight: 700; color: #4e6d8e; margin-bottom: 4px; }
+    .today-cell .dnum { color: #112d4e; text-decoration: underline; }
 
-    .dose-chip {
-      border-radius: 12px;
-      padding: 8px 9px;
-      font-size: 0.73rem;
+    /* Dose blocks — grayscale shading levels for taper steps */
+    .dose-block {
+      border-radius: 4px;
+      padding: 5px 7px;
+      margin-bottom: 4px;
+      font-size: 0.69rem;
+      font-weight: 500;
       line-height: 1.35;
-      margin-bottom: 6px;
-      border: 1px solid transparent;
+      border: 1px solid;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+    .dose-block .med-name { font-weight: 700; font-size: 0.7rem; margin-bottom: 3px; }
+    .dose-block .instruction-line { font-size: 0.66rem; margin-top: 2px; line-height: 1.3; }
+    .instruction-copy { display: block; }
+
+    /* 4 step styles using brand palette */
+    .gs-0 { background: #112d4e; color: #fff; border-color: #0a1d33; }
+    .gs-1 { background: #3f72af; color: #fff; border-color: #2d5a8e; }
+    .gs-2 { background: #dbe2ef; color: #112d4e; border-color: #b0bfd4; }
+    .gs-3 { background: #fff; color: #112d4e; border-color: #3f72af; }
+
+    .no-shading .dose-block {
+      background: #fff !important;
+      color: #112d4e !important;
+      border: 2px solid #3f72af !important;
+      border-style: solid !important;
+    }
+    .no-shading .leg-swatch {
+      background: #fff !important;
+      border: 2px solid #3f72af !important;
     }
 
-    .dose-chip strong {
-      display: block;
-      margin-bottom: 2px;
-      font-size: 0.78rem;
+    /* ── Legend ──────────────────────────── */
+    .legend { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 12px; }
+    .leg-item {
+      display: flex; align-items: center; gap: 7px;
+      background: #fff; border: 1px solid #dbe2ef; border-radius: 5px;
+      padding: 5px 10px; font-size: 0.76rem; color: #112d4e;
+    }
+    .leg-swatch {
+      width: 16px; height: 14px; border-radius: 3px; border: 1px solid #b0bfd4;
+      flex-shrink: 0;
+      -webkit-print-color-adjust: exact; print-color-adjust: exact;
     }
 
-    .dose-chip small {
-      display: block;
-      opacity: 0.9;
+    /* ── Disclaimer full ─────────────────── */
+    .disclaimer-full {
+      background: #f0f4f9; border: 1px solid #b0bfd4; border-radius: 6px;
+      padding: 8px 12px; margin-top: 12px;
+      font-size: 8pt; color: #112d4e; line-height: 1.35;
     }
+    .disclaimer-full strong { display: inline; margin-right: 4px; font-size: 8pt; }
 
-    .step-tone-0 {
-      background: var(--step-1);
-      color: #fff;
-      border-color: #0f1b28;
-    }
-
-    .step-tone-1 {
-      background: var(--step-2);
-      color: #fff;
-      border-color: #43515d;
-    }
-
-    .step-tone-2 {
-      background: var(--step-3);
-      color: #fffaf2;
-      border-color: #877961;
-    }
-
-    .step-tone-3 {
-      background: var(--step-4);
-      color: var(--text);
-      border-color: #c0aa84;
-    }
-
-    .step-tone-4 {
-      background: var(--step-5);
-      color: var(--text);
-      border-color: #dbc9ae;
-    }
-
-    .legend {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      margin-top: 16px;
-    }
-
-    .legend-item {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 8px 10px;
-      border: 1px solid var(--line);
-      border-radius: 999px;
-      background: rgba(255, 255, 255, 0.66);
-      font-size: 0.86rem;
-      color: var(--muted);
-    }
-
-    .legend-swatch {
-      width: 14px;
-      height: 14px;
-      border-radius: 50%;
-      border: 1px solid rgba(20, 35, 50, 0.12);
-    }
-
-    .disclaimer {
-      margin-top: 14px;
-      padding: 14px 16px;
-      border: 1px solid rgba(146, 114, 65, 0.24);
-      border-radius: 16px;
-      background: rgba(255, 250, 241, 0.88);
-      color: var(--muted);
-      font-size: 0.9rem;
-    }
-
-    .footer {
-      display: flex;
-      justify-content: space-between;
-      gap: 16px;
-      flex-wrap: wrap;
-      padding-top: 24px;
-      color: var(--muted);
-      font-size: 0.92rem;
-    }
-
-    @media (max-width: 980px) {
-      .app-grid,
-      .hero {
-        grid-template-columns: 1fr;
-      }
-
-      .summary-stack {
-        position: static;
-      }
-    }
-
-    @media (max-width: 680px) {
-      .page {
-        width: min(100% - 20px, 1180px);
-      }
-
-      .meta-grid,
-      .step-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .field-span-2 {
-        grid-column: auto;
-      }
-
-      .step-preview,
-      .calendar-head,
-      .topbar,
-      .footer {
-        display: grid;
-        grid-template-columns: 1fr;
-      }
-
-      .day {
-        min-height: 108px;
-      }
-    }
-
+    /* ── Print ───────────────────────────── */
     @media print {
-      body {
-        background: #fff;
+      @page { size: letter landscape; margin: 0.18in; }
+      html, body { background: #fff; height: auto; }
+      body { margin: 0 !important; }
+      header, .disclaimer-banner, .card { display: none !important; }
+      .wrap {
+        padding: 0 !important;
+        margin: 0 !important;
+        max-width: 100% !important;
       }
-
-      .topbar,
-      .hero,
-      .builder,
-      .summary,
-      .calendar-head .btn-row,
-      .footer {
-        display: none !important;
+      #cal-section {
+        display: block !important;
+        margin: 0 !important;
+        padding: 0 !important;
       }
-
-      .page {
-        width: 100%;
-        padding: 0;
+      .cal-top {
+        display: flex !important;
+        justify-content: flex-end !important;
+        margin: 0 0 0.02in 0 !important;
       }
-
-      .calendar,
-      .calendar.visible {
-        display: block;
-        border: 0;
-        box-shadow: none;
-        background: #fff;
-        padding: 0;
+      #cal-heading, .cal-nav, #shade-toggle-btn, #print-btn { display: none !important; }
+      .months-container {
+        display: block !important;
       }
-
-      .month {
+      .month-panel {
         break-after: page;
-        border: 0;
-        padding: 0 0 12px;
-        background: #fff;
+        page-break-after: always;
+        margin: 0 !important;
+        padding: 0 !important;
       }
-
-      .month:last-child {
+      .month-panel:last-child {
         break-after: auto;
+        page-break-after: auto;
       }
+      .month-panel {
+        position: relative;
+      }
+      .month-title {
+        display: block !important;
+        font-size: 20pt !important;
+        line-height: 1.02 !important;
+        font-weight: 800 !important;
+        text-align: center !important;
+        margin: 0 0 0.04in 0 !important;
+        color: #000 !important;
+      }
+      .cal-grid {
+        display: grid;
+        grid-template-rows: auto 1fr;
+        height: 7.50in;
+        box-shadow: none;
+        border: 1.5px solid #000;
+      }
+      .day-heads { background: #112d4e !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .day-heads div { padding: 8px 0; font-size: 10.4pt; }
+      .cal-body { align-content: stretch; }
+      .cal-body[data-weeks='4'] { grid-template-rows: repeat(4, minmax(0, 1fr)); }
+      .cal-body[data-weeks='5'] { grid-template-rows: repeat(5, minmax(0, 1fr)); }
+      .cal-body[data-weeks='6'] { grid-template-rows: repeat(6, minmax(0, 1fr)); }
+      .cell {
+        min-height: 0 !important;
+        height: auto;
+        padding: 6px 6px 5px 6px;
+      }
+      .month-panel[data-weeks='4'] .dnum { font-size: 8.8pt; margin-bottom: 3px; }
+      .month-panel[data-weeks='5'] .dnum { font-size: 8.1pt; margin-bottom: 3px; }
+      .month-panel[data-weeks='6'] .dnum { font-size: 7.4pt; margin-bottom: 2px; }
+      .month-panel[data-weeks='4'] .dose-block { padding: 11px 12px; font-size: 14.0pt; line-height: 1.32; }
+      .month-panel[data-weeks='5'] .dose-block { padding: 10px 11px; font-size: 12.8pt; line-height: 1.29; }
+      .month-panel[data-weeks='6'] .dose-block { padding: 8px 9px; font-size: 10.9pt; line-height: 1.24; }
+      .month-panel[data-weeks='4'] .dose-block .med-name { font-size: 14.6pt; margin-bottom: 5px; }
+      .month-panel[data-weeks='5'] .dose-block .med-name { font-size: 13.3pt; margin-bottom: 4px; }
+      .month-panel[data-weeks='6'] .dose-block .med-name { font-size: 11.5pt; margin-bottom: 3px; }
+      .month-panel[data-weeks='4'] .dose-block .instruction-line { font-size: 13.4pt; margin-top: 3px; line-height: 1.28; }
+      .month-panel[data-weeks='5'] .dose-block .instruction-line { font-size: 12.2pt; margin-top: 2px; line-height: 1.25; }
+      .month-panel[data-weeks='6'] .dose-block .instruction-line { font-size: 10.4pt; margin-top: 2px; line-height: 1.21; }
+      .print-footer { display: none; }
+      .print-footer {
+        display: block !important;
+        font-size: 8pt !important;
+        line-height: 1.15 !important;
+        color: #000 !important;
+        text-align: center !important;
+        margin-top: 0.06in !important;
+        padding: 0 !important;
+        font-weight: 400 !important;
+      }
+      .print-footer strong { font-weight: 700 !important; }
+      .disclaimer-full { display: none !important; }
+    }
 
-      .calendar-grid {
-        border-color: #000;
-      }
+    @media(max-width:980px){
+      .step-card-top { grid-template-columns: 28px 1fr minmax(88px, 104px); }
+      .step-card-top .step-daily { grid-column: 2 / span 2; }
+      .step-card-bottom { grid-template-columns: 1fr minmax(110px, 150px) 40px; }
+      .time-dose-grid { grid-template-columns: repeat(auto-fit, minmax(96px, 1fr)); }
+    }
 
-      .day-heads {
-        background: #000;
-      }
+    @media(max-width:760px){
+      .step-card-top { grid-template-columns: 28px 1fr; }
+      .step-card-top .step-days,
+      .step-card-top .step-daily { grid-column: 2; }
+      .step-card-bottom { grid-template-columns: 1fr; }
+      .step-actions { justify-content: flex-start; }
+      .date-range-badge { padding-top: 0; }
+    }
+
+    @media(max-width:580px){
+      .meta-row { grid-template-columns: 1fr; }
+      .time-dose-grid { grid-template-columns: 1fr 1fr; min-width: 0; }
+      .time-dose-item { padding: 6px 7px; }
+      .time-dose-top { font-size: 0.74rem; }
+      .cell { min-height: 96px; padding: 4px 3px; }
+      .dose-block { font-size: 0.6rem; padding: 4px 5px; }
+      .dose-block .instruction-line { font-size: 0.58rem; }
     }
   </style>
 </head>
 <body>
-  <div class="page">
-    <header class="topbar">
-      <div class="wordmark">catylst<span>rx</span>.com</div>
-      <a class="nav-link" href="index.html">Back to home</a>
-    </header>
 
-    <section class="hero">
-      <div class="panel hero-copy">
-        <p class="eyebrow">Medication Planning Tool</p>
-        <h1>Build a taper calendar patients can actually follow.</h1>
-        <p>
-          Create a step-by-step medication schedule where the dose increases or decreases over time,
-          then turn it into a clear monthly calendar for printing or sharing.
-        </p>
-      </div>
-
-      <aside class="panel hero-side">
-        <div class="mini-card">
-          <strong>Designed for tapers</strong>
-          <p>Works for dose reductions, dose increases, or mixed step schedules across any date range.</p>
-        </div>
-        <div class="mini-card">
-          <strong>Built for clarity</strong>
-          <p>Each step gets a visible date range, a daily dose summary, and a calendar view for patients.</p>
-        </div>
-        <div class="mini-card">
-          <strong>Reminder</strong>
-          <p>This is a scheduling aid only. Final instructions should always come from the prescriber or pharmacist.</p>
-        </div>
-      </aside>
-    </section>
-
-    <section class="app-grid">
-      <section class="panel builder">
-        <div class="section-title">
-          <div>
-            <h2>Schedule Builder</h2>
-            <p>Enter the medication details, then add each taper step in order.</p>
-          </div>
-        </div>
-
-        <div class="meta-grid">
-          <div class="field">
-            <label for="medication-name">Medication Name</label>
-            <input id="medication-name" type="text" placeholder="e.g. Prednisone" />
-          </div>
-          <div class="field">
-            <label for="patient-name">Patient Name</label>
-            <input id="patient-name" type="text" placeholder="Optional" />
-          </div>
-          <div class="field">
-            <label for="start-date">Start Date</label>
-            <input id="start-date" type="date" />
-          </div>
-          <div class="field">
-            <label for="dose-unit">Dose Unit</label>
-            <select id="dose-unit">
-              <option value="mg">mg</option>
-              <option value="mcg">mcg</option>
-              <option value="mL">mL</option>
-              <option value="tablet">tablets</option>
-              <option value="capsule">capsules</option>
-            </select>
-          </div>
-          <div class="field">
-            <label for="strength">Strength Per Unit</label>
-            <input id="strength" type="number" min="0" step="0.01" placeholder="Optional" />
-          </div>
-          <div class="field">
-            <label for="dosage-form">Dosage Form</label>
-            <select id="dosage-form">
-              <option value="tablet">tablet</option>
-              <option value="capsule">capsule</option>
-            </select>
-          </div>
-          <div class="field field-span-2">
-            <label for="global-notes">Shared Instructions</label>
-            <textarea
-              id="global-notes"
-              placeholder="Optional details, such as 'take with food' or 'follow up after final step.'"
-            ></textarea>
-          </div>
-        </div>
-
-        <div class="section-title">
-          <div>
-            <h2>Taper Steps</h2>
-            <p>Each step should include a daily dose and how many days it lasts.</p>
-          </div>
-        </div>
-
-        <div id="steps" class="steps"></div>
-
-        <div class="btn-row">
-          <button id="add-step" class="btn btn-secondary" type="button">Add Step</button>
-          <button id="load-example" class="btn btn-secondary" type="button">Load Example</button>
-          <button id="reset-form" class="btn btn-secondary" type="button">Reset</button>
-          <button id="generate-calendar" class="btn btn-accent" type="button">Generate Calendar</button>
-        </div>
-      </section>
-
-      <aside class="summary-stack">
-        <section class="panel summary">
-          <div class="section-title">
-            <div>
-              <h2>Plan Summary</h2>
-              <p>Live preview of the taper timeline.</p>
-            </div>
-          </div>
-
-          <p class="summary-note" id="summary-note">
-            Add a medication, pick a start date, and enter at least one valid taper step.
-          </p>
-
-          <div class="totals" id="totals"></div>
-        </section>
-
-        <section class="panel summary">
-          <div class="section-title">
-            <div>
-              <h2>Step Timeline</h2>
-              <p>Date ranges update automatically as you edit the plan.</p>
-            </div>
-          </div>
-
-          <div class="plan-list" id="plan-list"></div>
-        </section>
-      </aside>
-    </section>
-
-    <section id="calendar-section" class="panel calendar" aria-live="polite">
-      <div class="calendar-head">
-        <div>
-          <h2 id="calendar-title">Medication Calendar</h2>
-          <p id="calendar-subtitle">A printable month-by-month view of the taper.</p>
-        </div>
-        <div class="btn-row">
-          <button id="print-calendar" class="btn btn-primary" type="button">Print</button>
-        </div>
-      </div>
-
-      <div id="months" class="months"></div>
-      <div id="legend" class="legend"></div>
-      <div class="disclaimer">
-        This calendar is a scheduling aid only and does not replace medical advice. Medication changes
-        should follow the prescribing clinician's or pharmacist's instructions.
-      </div>
-    </section>
-
-    <footer class="footer">
-      <div>&copy; 2026 catylstrx.com</div>
-      <a href="mailto:admin@catylstrx.com">admin@catylstrx.com</a>
-    </footer>
+<header>
+  <div class="logo-box">💊</div>
+  <div>
+    <h1>MedCal</h1>
+    <p class="sub">Medication Taper Calendar</p>
   </div>
-  <script>
-    const state = {
-      nextStepId: 1,
-      steps: [],
-      schedule: []
-    };
+</header>
 
-    const stepTones = ["step-tone-0", "step-tone-1", "step-tone-2", "step-tone-3", "step-tone-4"];
-    const weekdayLabels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-    const monthLabels = [
-      "January",
-      "February",
-      "March",
-      "April",
-      "May",
-      "June",
-      "July",
-      "August",
-      "September",
-      "October",
-      "November",
-      "December"
-    ];
+<div class="disclaimer-banner">
+  <span class="di">⚠️</span>
+  <span><strong>DISCLAIMER:</strong> This tool is a scheduling aid only and does not constitute medical advice. Always follow instructions from your prescribing physician or pharmacist. Use at your own risk.</span>
+</div>
 
-    const medicationNameInput = document.getElementById("medication-name");
-    const patientNameInput = document.getElementById("patient-name");
-    const startDateInput = document.getElementById("start-date");
-    const doseUnitSelect = document.getElementById("dose-unit");
-    const strengthInput = document.getElementById("strength");
-    const dosageFormSelect = document.getElementById("dosage-form");
-    const globalNotesInput = document.getElementById("global-notes");
-    const stepsEl = document.getElementById("steps");
-    const totalsEl = document.getElementById("totals");
-    const summaryNoteEl = document.getElementById("summary-note");
-    const planListEl = document.getElementById("plan-list");
-    const calendarSectionEl = document.getElementById("calendar-section");
-    const calendarTitleEl = document.getElementById("calendar-title");
-    const calendarSubtitleEl = document.getElementById("calendar-subtitle");
-    const monthsEl = document.getElementById("months");
-    const legendEl = document.getElementById("legend");
+<div class="wrap">
 
-    function todayString() {
-      const today = new Date();
-      const year = today.getFullYear();
-      const month = String(today.getMonth() + 1).padStart(2, "0");
-      const day = String(today.getDate()).padStart(2, "0");
-      return year + "-" + month + "-" + day;
-    }
+  <div class="card" id="entry-card">
+    <div class="card-title">💊 Enter Taper Schedule</div>
 
-    function parseLocalDate(value) {
-      if (!value) return null;
-      const parts = value.split("-").map(Number);
-      if (parts.length !== 3 || parts.some(Number.isNaN)) return null;
-      return new Date(parts[0], parts[1] - 1, parts[2]);
-    }
+    <div class="meta-row">
+      <div class="field">
+        <label>Medication Name</label>
+        <input type="text" id="med-name" placeholder="e.g. Prednisone" />
+      </div>
+      <div class="field">
+        <label>Unit Strength</label>
+        <input type="text" id="tab-strength" placeholder="e.g. 5 mg" oninput="refreshSteps()" />
+      </div>
+      <div class="field">
+        <label>Dosage Form</label>
+        <select id="dosage-form" onchange="refreshSteps()">
+          <option value="tablet" selected>Tablet</option>
+          <option value="capsule">Capsule</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>Start Date</label>
+        <input type="date" id="start-date" oninput="refreshSteps()" />
+      </div>
+    </div>
 
-    function dateKey(date) {
-      return (
-        date.getFullYear() +
-        "-" +
-        String(date.getMonth() + 1).padStart(2, "0") +
-        "-" +
-        String(date.getDate()).padStart(2, "0")
-      );
-    }
+    <div class="taper-label">Taper Steps</div>
+    <table class="steps-table">
+      <thead>
+        <tr>
+          <th style="width:36px"></th>
+          <th style="min-width:110px">Dose</th>
+          <th style="min-width:250px">Times of Day</th>
+          <th style="min-width:80px">Days</th>
+          <th class="center" style="min-width:130px">Units Each Time</th>
+          <th class="center" style="min-width:190px">Preview</th>
+          <th class="center" style="min-width:160px">Date Range</th>
+          <th style="width:38px"></th>
+        </tr>
+      </thead>
+      <tbody id="steps-body"></tbody>
+    </table>
 
-    function addDays(date, amount) {
-      const next = new Date(date);
-      next.setDate(next.getDate() + amount);
-      return next;
-    }
+    <div class="taper-footer">
+      <button type="button" class="btn btn-outline" onclick="addStep()">＋ Add Step</button>
+      <button type="button" class="btn btn-primary" onclick="generate()">Generate Calendar →</button>
+      <button type="button" class="btn btn-ghost" onclick="loadExample()">Load Example</button>
+      <button type="button" class="btn btn-ghost" onclick="resetForm()">Reset</button>
+    </div>
 
-    function formatDate(date) {
-      return date.toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-        year: "numeric"
+    <div class="summary-bar" id="summary-bar" style="display:none"></div>
+  </div>
+
+  <div id="cal-section">
+    <div class="cal-top">
+      <h2 id="cal-heading">Taper Calendar</h2>
+      <div class="cal-nav">
+        <button type="button" class="shade-toggle-btn" id="shade-toggle-btn" aria-pressed="true" onclick="toggleShading()">Shading On</button>
+        <button type="button" class="shade-toggle-btn" id="print-btn" onclick="window.print()">Print</button>
+      </div>
+    </div>
+    <div id="months-container" class="months-container"></div>
+  </div>
+
+</div>
+
+<script>
+  let stepCount = 0;
+  let steps = [];
+  let schedule = [];
+  let shadingEnabled = true;
+  const GS = ['gs-0','gs-1','gs-2','gs-3'];
+  const stepColorMap = {};
+
+  (function init() {
+    initializeBlankForm();
+    setShadingState();
+  })();
+
+  function todayStr() {
+    return new Date().toISOString().split('T')[0];
+  }
+
+  function createTimeDoseMap(dose, times) {
+    const map = { AM: '', Noon: '', Afternoon: '', PM: '', Bedtime: '' };
+    if (Array.isArray(times) && times.length) {
+      times.forEach(label => {
+        if (label in map) map[label] = dose !== undefined ? dose : '';
       });
     }
+    return map;
+  }
 
-    function formatCompact(value) {
-      const number = Number(value);
-      if (!Number.isFinite(number)) return "";
-      if (Math.abs(number - Math.round(number)) < 0.000001) return String(Math.round(number));
-      return number.toFixed(2).replace(/(\.\d*?[1-9])0+$/, "$1").replace(/\.0$/, "");
+  function initializeBlankForm() {
+    document.getElementById('med-name').value = '';
+    document.getElementById('tab-strength').value = '';
+    document.getElementById('dosage-form').value = 'tablet';
+    document.getElementById('start-date').value = todayStr();
+    document.getElementById('steps-body').innerHTML = '';
+    document.getElementById('months-container').innerHTML = '';
+    steps = [];
+    stepCount = 0;
+    schedule = [];
+    Object.keys(stepColorMap).forEach(k => delete stepColorMap[k]);
+    document.getElementById('summary-bar').style.display = 'none';
+    document.getElementById('summary-bar').innerHTML = '';
+    document.getElementById('cal-section').classList.remove('visible');
+    addStep();
+    refreshSteps();
+  }
+
+  function loadExample() {
+    initializeBlankForm();
+    document.getElementById('med-name').value = 'Prednisone';
+    document.getElementById('tab-strength').value = '5 mg';
+    document.getElementById('dosage-form').value = 'tablet';
+    document.getElementById('steps-body').innerHTML = '';
+    steps = [];
+    stepCount = 0;
+    addStep(40, ['AM'], 5);
+    addStep(30, ['AM'], 5);
+    addStep(20, ['AM'], 7);
+    addStep(10, ['AM'], 7);
+    refreshSteps();
+  }
+
+  function addStep(dose, times, days) {
+    stepCount++;
+    const id = stepCount;
+    const timeDoses = createTimeDoseMap(dose, times);
+    steps.push({
+      id,
+      days: days !== undefined ? days : '',
+      timeDoses
+    });
+    const tbody = document.getElementById('steps-body');
+    const tr = document.createElement('tr');
+    tr.className = 'step-row';
+    tr.id = `step-${id}`;
+    const timeControls = [
+      ['AM', 'Morning'],
+      ['Noon', 'Noon'],
+      ['Afternoon', 'Afternoon'],
+      ['PM', 'Evening'],
+      ['Bedtime', 'Bedtime']
+    ].map(([value, label]) => {
+      const checked = timeDoses[value] !== '';
+      return `
+      <div class="time-dose-item">
+        <label class="time-dose-top">
+          <input type="checkbox" id="time-${value}-${id}" ${checked ? 'checked' : ''} onchange="updateStep(${id})" />
+          <span>${label}</span>
+        </label>
+        <div class="time-dose-dose">
+          <input type="number" id="dose-${value}-${id}" min="0" step="0.5" placeholder="mg"
+            value="${checked ? timeDoses[value] : ''}" oninput="updateStep(${id})" />
+          <span class="unit">mg</span>
+        </div>
+      </div>`;
+    }).join('');
+    tr.innerHTML = `
+      <td colspan="8">
+        <div class="step-card">
+          <div class="step-card-top">
+            <div><span class="step-num" id="snum-${id}">${steps.length}</span></div>
+            <div class="step-field step-times">
+              <span class="step-field-label">Dose by Time of Day</span>
+              <div class="time-dose-grid">${timeControls}</div>
+            </div>
+            <div class="step-field step-days">
+              <span class="step-field-label">Days</span>
+              <input type="number" id="days-${id}" min="1" placeholder="days"
+                value="${days !== undefined ? days : ''}" oninput="updateStep(${id})" />
+            </div>
+            <div class="step-field compact step-daily">
+              <span class="step-field-label">Total Daily Dose</span>
+              <span class="daily-dose-badge" id="dailydose-${id}">—</span>
+            </div>
+          </div>
+          <div class="step-card-bottom">
+            <div class="step-field">
+              <span class="step-field-label">Preview</span>
+              <span class="preview-text" id="preview-${id}">—</span>
+            </div>
+            <div class="step-field compact">
+              <span class="step-field-label">Date Range</span>
+              <span class="date-range-badge" id="drange-${id}">—</span>
+            </div>
+            <div class="step-actions">
+              <button type="button" class="btn-del" title="Remove" onclick="removeStep(${id})">✕</button>
+            </div>
+          </div>
+        </div>
+      </td>
+    `;
+    tbody.appendChild(tr);
+    refreshSteps();
+  }
+
+  function getTimeDosesFromInputs(id) {
+    const ordered = ['AM', 'Noon', 'Afternoon', 'PM', 'Bedtime'];
+    const map = {};
+    ordered.forEach(label => {
+      const checked = document.getElementById(`time-${label}-${id}`);
+      const doseInput = document.getElementById(`dose-${label}-${id}`);
+      if (!checked || !doseInput) return;
+      const rawDose = parseFloat(doseInput.value);
+      map[label] = checked.checked && isFinite(rawDose) && rawDose > 0 ? rawDose : '';
+    });
+    return map;
+  }
+
+  function updateStep(id) {
+    const idx = steps.findIndex(s => s.id === id);
+    if (idx < 0) return;
+    steps[idx].timeDoses = getTimeDosesFromInputs(id);
+    steps[idx].days = parseInt(document.getElementById(`days-${id}`).value) || '';
+    refreshSteps();
+  }
+
+    function removeStep(id) {
+    steps = steps.filter(s => s.id !== id);
+    const el = document.getElementById(`step-${id}`);
+    if (el) el.remove();
+    steps.forEach((s, i) => {
+      const n = document.getElementById(`snum-${s.id}`);
+      if (n) n.textContent = i + 1;
+    });
+    refreshSteps();
+  }
+
+  function formatNumber(n) {
+    if (n === null || n === undefined || n === '') return '';
+    const value = Number(n);
+    if (!isFinite(value)) return '';
+    if (Number.isInteger(value)) return String(value);
+    return value.toFixed(2).replace(/(\.\d*?[1-9])0+$/, '$1').replace(/\.0$/, '');
+  }
+
+  function getDosageForm() {
+    const el = document.getElementById('dosage-form');
+    return el ? el.value : 'tablet';
+  }
+
+  function unitWord(count, form) {
+    const isOne = Math.abs(Number(count) - 1) < 0.000001;
+    return form === 'capsule'
+      ? (isOne ? 'capsule' : 'capsules')
+      : (isOne ? 'tablet' : 'tablets');
+  }
+
+  function formatDoseUnitCount(n, style = 'label', form = 'tablet') {
+    if (n === null || !isFinite(n)) return '';
+    const value = Number(n);
+    const whole = Math.trunc(value);
+    const frac = Math.abs(value - whole);
+    if (Math.abs(frac - 0.5) < 0.000001) {
+      if (whole === 0) return style === 'label' ? `one half ${unitWord(1, form)}` : `1/2 ${unitWord(2, form)}`;
+      if (style === 'label') return `${whole} and a half ${unitWord(2, form)}`;
+      return `${whole} 1/2 ${unitWord(2, form)}`;
     }
+    const formatted = formatNumber(value);
+    return `${formatted} ${unitWord(value, form)}`;
+  }
 
-    function escapeHtml(value) {
-      return String(value)
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#39;");
+  function timePhrase(label) {
+    if (label === 'AM') return 'in the morning';
+    if (label === 'Noon') return 'at noon';
+    if (label === 'Afternoon') return 'in the afternoon';
+    if (label === 'PM') return 'in the evening';
+    if (label === 'Bedtime') return 'at bedtime';
+    return label;
+  }
+
+  function timeLead(label) {
+    if (label === 'AM') return 'Morning:';
+    if (label === 'Noon') return 'Noon:';
+    if (label === 'Afternoon') return 'Afternoon:';
+    if (label === 'PM') return 'Evening:';
+    if (label === 'Bedtime') return 'Bedtime:';
+    return `${label}:`;
+  }
+
+  function tabletStrengthLabel(entry) {
+    const raw = entry && entry.tabStr ? String(entry.tabStr).trim() : '';
+    const parsed = raw ? parseFloat(raw) : NaN;
+    if (isFinite(parsed)) return `${formatNumber(parsed)} mg each`;
+    if (raw) return `${raw} each`;
+    return 'strength not entered';
+  }
+
+  function buildInstructionText(entry, label, includeMedName = false) {
+    const lead = label ? `${timeLead(label)} ` : '';
+    const dosageForm = entry && entry.dosageForm ? entry.dosageForm : getDosageForm();
+    const unitPart = entry.tabsPerDose !== null && entry.tabsPerDose !== undefined
+      ? `Take ${formatDoseUnitCount(entry.tabsPerDose, 'label', dosageForm)} (${tabletStrengthLabel(entry)}) for a total dose of ${formatNumber(entry.dose)} mg`
+      : `Take total dose ${formatNumber(entry.dose)} mg`;
+    const medPart = includeMedName ? `${entry.medName} — ` : '';
+    return `${medPart}${lead}${unitPart}`.trim();
+  }
+
+  function setShadingState() {
+    const topBtn = document.getElementById('shade-toggle-btn');
+    if (topBtn) {
+      topBtn.textContent = shadingEnabled ? 'Shading On' : 'Shading Off';
+      topBtn.setAttribute('aria-pressed', shadingEnabled ? 'true' : 'false');
     }
-
-    function unitLabel(unit, amount) {
-      if (unit === "tablet") return Math.abs(amount - 1) < 0.000001 ? "tablet" : "tablets";
-      if (unit === "capsule") return Math.abs(amount - 1) < 0.000001 ? "capsule" : "capsules";
-      return unit;
+    const calSection = document.getElementById('cal-section');
+    if (calSection) {
+      calSection.classList.toggle('no-shading', !shadingEnabled);
     }
+  }
 
-    function dosageFormLabel(amount) {
-      const form = dosageFormSelect.value;
-      return Math.abs(amount - 1) < 0.000001 ? form : form + "s";
+  function toggleShading() {
+    shadingEnabled = !shadingEnabled;
+    setShadingState();
+    if (document.getElementById('cal-section').classList.contains('visible')) {
+      renderAllMonths();
     }
+    refreshSteps();
+  }
 
-    function doseDisplay(step) {
-      const dose = Number(step.dose);
-      if (!Number.isFinite(dose) || dose <= 0) return "Dose not set";
-      return formatCompact(dose) + " " + unitLabel(doseUnitSelect.value, dose);
+  function escapeHtml(text) {
+    return String(text)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function renderInstructionLine(entry, label, includeMedName = false) {
+    const text = buildInstructionText(entry, label, includeMedName);
+    const safeText = escapeHtml(text);
+    return `<div class="instruction-line"><span class="instruction-copy">${safeText}</span></div>`;
+  }
+
+  function buildInstructionLines(entry, includeMedName = true) {
+    const times = Array.isArray(entry.times) ? entry.times : [];
+    if (!times.length) {
+      return [buildInstructionText(entry, '', includeMedName)];
     }
+    return times.map(label => buildInstructionText(entry, label, includeMedName));
+  }
 
-    function equivalentDisplay(step) {
-      const strength = Number(strengthInput.value);
-      const dose = Number(step.dose);
-      const unit = doseUnitSelect.value;
-      if (!Number.isFinite(strength) || strength <= 0 || !Number.isFinite(dose) || dose <= 0) return "";
-      if (unit === "tablet" || unit === "capsule") return "";
-      const count = dose / strength;
-      if (!Number.isFinite(count) || count <= 0) return "";
-      return formatCompact(count) + " " + dosageFormLabel(count);
-    }
+  function getSelectedDoseEntries(step) {
+    const ordered = ['AM', 'Noon', 'Afternoon', 'PM', 'Bedtime'];
+    const map = step && step.timeDoses ? step.timeDoses : {};
+    return ordered
+      .map(label => ({ label, dose: parseFloat(map[label]) }))
+      .filter(item => isFinite(item.dose) && item.dose > 0);
+  }
 
-    function instructionDisplay(step) {
-      const parts = [doseDisplay(step)];
-      const equivalent = equivalentDisplay(step);
-      if (equivalent) parts.push("(" + equivalent + ")");
-      parts.push("daily");
-      if (step.notes && step.notes.trim()) parts.push("| " + step.notes.trim());
-      return parts.join(" ");
-    }
+  function refreshSteps() {
+    const tabStr = document.getElementById('tab-strength').value.trim();
+    const tabMg = parseFloat(tabStr) || null;
+    const startVal = document.getElementById('start-date').value;
+    let cursor = startVal ? new Date(startVal + 'T00:00:00') : null;
+    const medName = document.getElementById('med-name').value.trim() || 'Medication';
+    const dosageForm = getDosageForm();
 
-    function validStep(step) {
-      return Number(step.dose) > 0 && Number(step.days) > 0;
-    }
+    steps.forEach(s => {
+      const dailyDoseBadge = document.getElementById(`dailydose-${s.id}`);
+      const drange = document.getElementById(`drange-${s.id}`);
+      const preview = document.getElementById(`preview-${s.id}`);
+      if (!dailyDoseBadge) return;
 
-    function createStep(data) {
-      state.steps.push({
-        id: state.nextStepId++,
-        dose: data && data.dose ? data.dose : "",
-        days: data && data.days ? data.days : "",
-        notes: data && data.notes ? data.notes : ""
-      });
-    }
+      const selectedEntries = getSelectedDoseEntries(s);
+      const totalDailyDose = selectedEntries.reduce((sum, item) => sum + item.dose, 0);
+      dailyDoseBadge.textContent = selectedEntries.length ? `${formatNumber(totalDailyDose)} mg/day` : '—';
 
-    function resetState() {
-      state.nextStepId = 1;
-      state.steps = [];
-      state.schedule = [];
-    }
+      preview.innerHTML = selectedEntries.length
+        ? selectedEntries.map(item => {
+            const previewEntry = {
+              medName,
+              dose: item.dose,
+              tabsPerDose: tabMg ? item.dose / tabMg : null,
+              tabStr,
+              dosageForm
+            };
+            return renderInstructionLine(previewEntry, item.label, true).replace('instruction-line', 'instruction-line preview-line');
+          }).join('')
+        : '—';
 
-    function seedDefaultStep() {
-      if (!state.steps.length) {
-        createStep();
-      }
-    }
-
-    function deriveTimeline() {
-      const start = parseLocalDate(startDateInput.value);
-      let cursor = start ? new Date(start) : null;
-
-      return state.steps.map(function (step, index) {
-        const isValid = validStep(step) && Boolean(cursor);
-        let range = "";
-        let startDate = null;
-        let endDate = null;
-
-        if (isValid) {
-          startDate = new Date(cursor);
-          endDate = addDays(cursor, Number(step.days) - 1);
-          range = formatDate(startDate) + " to " + formatDate(endDate);
-          cursor = addDays(endDate, 1);
-        }
-
-        return {
-          step: step,
-          index: index,
-          days: Number(step.days),
-          isValid: isValid,
-          startDate: startDate,
-          endDate: endDate,
-          range: range
-        };
-      });
-    }
-
-    function summaryTotals(timeline) {
-      const validItems = timeline.filter(function (item) {
-        return item.isValid;
-      });
-
-      if (!validItems.length) return null;
-
-      return {
-        totalDays: validItems.reduce(function (sum, item) {
-          return sum + item.days;
-        }, 0),
-        firstDate: validItems[0].startDate,
-        lastDate: validItems[validItems.length - 1].endDate
-      };
-    }
-
-    function renderSteps() {
-      const timeline = deriveTimeline();
-
-      stepsEl.innerHTML = state.steps
-        .map(function (step, index) {
-          const item = timeline[index];
-          return (
-            '<article class="step-card">' +
-            '<div class="step-head">' +
-            '<div class="step-label"><span class="step-index">' + (index + 1) + "</span>Step " + (index + 1) + "</div>" +
-            (state.steps.length > 1
-              ? '<button class="btn-remove" type="button" data-action="remove-step" data-id="' + step.id + '">Remove</button>'
-              : "") +
-            "</div>" +
-            '<div class="step-grid">' +
-            '<div class="field">' +
-            '<label for="dose-' + step.id + '">Daily Dose</label>' +
-            '<input id="dose-' + step.id + '" data-field="dose" data-id="' + step.id + '" type="number" min="0" step="0.01" placeholder="e.g. 20" value="' + escapeHtml(step.dose) + '" />' +
-            "</div>" +
-            '<div class="field">' +
-            '<label for="days-' + step.id + '">Days at This Dose</label>' +
-            '<input id="days-' + step.id + '" data-field="days" data-id="' + step.id + '" type="number" min="1" step="1" placeholder="e.g. 7" value="' + escapeHtml(step.days) + '" />' +
-            "</div>" +
-            '<div class="field field-span-2">' +
-            '<label for="notes-' + step.id + '">Step Notes</label>' +
-            '<input id="notes-' + step.id + '" data-field="notes" data-id="' + step.id + '" type="text" placeholder="Optional instruction for this step" value="' + escapeHtml(step.notes) + '" />' +
-            "</div>" +
-            "</div>" +
-            '<div class="step-preview">' +
-            "<div><strong>Instruction</strong><p>" + escapeHtml(instructionDisplay(step)) + "</p></div>" +
-            "<div><strong>Date Range</strong><p>" + escapeHtml(item.range || "Enter a start date and valid dose/duration") + "</p></div>" +
-            "</div>" +
-            "</article>"
-          );
-        })
-        .join("");
-    }
-
-    function renderSummary() {
-      const timeline = deriveTimeline();
-      const totals = summaryTotals(timeline);
-      const medName = medicationNameInput.value.trim() || "Medication";
-      const patientName = patientNameInput.value.trim();
-
-      if (!totals) {
-        summaryNoteEl.textContent = "Add a medication, pick a start date, and enter at least one valid taper step.";
-        totalsEl.innerHTML = "";
+      if (cursor && s.days > 0 && selectedEntries.length) {
+        const end = new Date(cursor);
+        end.setDate(end.getDate() + s.days - 1);
+        drange.textContent = `${fmtDate(cursor)} – ${fmtDate(end)}`;
+        cursor = new Date(end);
+        cursor.setDate(cursor.getDate() + 1);
       } else {
-        summaryNoteEl.textContent = patientName ? medName + " taper for " + patientName + "." : medName + " taper plan.";
-        totalsEl.innerHTML =
-          '<div class="total-item"><span>Total Duration</span>' + totals.totalDays + " days</div>" +
-          '<div class="total-item"><span>Start</span>' + formatDate(totals.firstDate) + "</div>" +
-          '<div class="total-item"><span>End</span>' + formatDate(totals.lastDate) + "</div>";
+        drange.textContent = '—';
       }
+    });
 
-      const items = timeline
-        .filter(function (item) {
-          return validStep(item.step);
-        })
-        .map(function (item) {
-          return (
-            '<article class="plan-item">' +
-            "<h3>Step " + (item.index + 1) + "</h3>" +
-            "<p>" + escapeHtml(instructionDisplay(item.step)) + "</p>" +
-            "<p>" + escapeHtml(item.range || "Date range pending") + "</p>" +
-            "</article>"
-          );
+    updateSummary(cursor);
+  }
+
+  function fmtDate(d) {
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  }
+
+  function updateSummary(endDate) {
+    const bar = document.getElementById('summary-bar');
+    const startVal = document.getElementById('start-date').value;
+    const medName = document.getElementById('med-name').value.trim() || 'Medication';
+    const validSteps = steps.filter(s => s.days > 0 && getSelectedDoseEntries(s).length > 0);
+    if (!startVal || !endDate || validSteps.length === 0) { bar.style.display = 'none'; return; }
+    const totalDays = validSteps.reduce((a, s) => a + s.days, 0);
+    const startD = new Date(startVal + 'T00:00:00');
+    bar.style.display = 'flex';
+    bar.innerHTML = `📅 <strong>${medName}</strong> taper &nbsp;·&nbsp; ${totalDays} days total &nbsp;·&nbsp; ${fmtDate(startD)} → ${fmtDate(new Date(endDate.getTime() - 86400000))}`;
+  }
+
+  function generate() {
+    const medName = document.getElementById('med-name').value.trim();
+    const tabStr = document.getElementById('tab-strength').value.trim();
+    const tabMg = parseFloat(tabStr) || null;
+    const startVal = document.getElementById('start-date').value;
+
+    if (!medName) { alert('Please enter the medication name.'); return; }
+    if (!startVal) { alert('Please select a start date.'); return; }
+    const validSteps = steps.filter(s => s.days > 0 && getSelectedDoseEntries(s).length > 0);
+    if (validSteps.length === 0) { alert('Please add at least one taper step with a dose by time of day and number of days.'); return; }
+
+    schedule = [];
+    Object.keys(stepColorMap).forEach(k => delete stepColorMap[k]);
+    let cursor = new Date(startVal + 'T00:00:00');
+    const dosageForm = getDosageForm();
+    validSteps.forEach((s, si) => {
+      const doseEntries = getSelectedDoseEntries(s);
+      for (let d = 0; d < s.days; d++) {
+        const ds = mkDateStr(cursor);
+        schedule.push({
+          dateStr: ds,
+          lines: doseEntries.map(item => ({
+            label: item.label,
+            dose: item.dose,
+            tabsPerDose: tabMg ? item.dose / tabMg : null
+          })),
+          stepIdx: si,
+          medName,
+          tabStr,
+          dosageForm
         });
-
-      planListEl.innerHTML = items.length ? items.join("") : '<p class="summary-note">No valid taper steps yet.</p>';
-    }
-
-    function renderAll() {
-      renderSteps();
-      renderSummary();
-    }
-
-    function updateStep(id, field, value) {
-      state.steps = state.steps.map(function (step) {
-        if (step.id !== id) return step;
-        return Object.assign({}, step, { [field]: value });
-      });
-      renderAll();
-    }
-
-    function buildSchedule() {
-      const medication = medicationNameInput.value.trim();
-      const startDate = parseLocalDate(startDateInput.value);
-      const timeline = deriveTimeline();
-      const validItems = timeline.filter(function (item) {
-        return item.isValid;
-      });
-
-      if (!medication) {
-        alert("Please enter the medication name.");
-        return null;
+        cursor.setDate(cursor.getDate() + 1);
       }
+    });
 
-      if (!startDate) {
-        alert("Please choose a start date.");
-        return null;
-      }
+    document.getElementById('cal-heading').textContent = `${medName} Taper Calendar`;
+    document.getElementById('cal-section').classList.add('visible');
+    setShadingState();
+    renderAllMonths();
+    document.getElementById('cal-section').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
 
-      if (!validItems.length) {
-        alert("Please add at least one taper step with a dose and number of days.");
-        return null;
-      }
+  function mkDateStr(d) {
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  }
 
-      const sharedNotes = globalNotesInput.value.trim();
-      const schedule = [];
+  const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 
-      validItems.forEach(function (item) {
-        for (let offset = 0; offset < item.days; offset += 1) {
-          const day = addDays(item.startDate, offset);
-          schedule.push({
-            key: dateKey(day),
-            date: day,
-            stepIndex: item.index,
-            medication: medication,
-            patient: patientNameInput.value.trim(),
-            doseText: doseDisplay(item.step),
-            equivalentText: equivalentDisplay(item.step),
-            notes: [item.step.notes ? item.step.notes.trim() : "", sharedNotes].filter(Boolean).join(" | ")
-          });
+  function getScheduleBounds() {
+    if (!schedule.length) return null;
+    const sorted = [...schedule].sort((a, b) => a.dateStr.localeCompare(b.dateStr));
+    const first = sorted[0].dateStr.split('-').map(Number);
+    const last = sorted[sorted.length - 1].dateStr.split('-').map(Number);
+    return {
+      start: new Date(first[0], first[1] - 1, 1),
+      end: new Date(last[0], last[1] - 1, 1)
+    };
+  }
+
+  function renderMonthPanel(year, month) {
+    const panel = document.createElement('section');
+    panel.className = 'month-panel';
+
+    const title = document.createElement('div');
+    title.className = 'month-title';
+    title.textContent = `${MONTHS[month]} ${year}`;
+    panel.appendChild(title);
+
+    const grid = document.createElement('div');
+    grid.className = 'cal-grid';
+
+    const heads = document.createElement('div');
+    heads.className = 'day-heads';
+    ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].forEach(name => {
+      const d = document.createElement('div');
+      d.textContent = name;
+      heads.appendChild(d);
+    });
+    grid.appendChild(heads);
+
+    const body = document.createElement('div');
+    body.className = 'cal-body';
+
+    const firstDay = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const weeksUsed = Math.ceil((firstDay + daysInMonth) / 7);
+    body.dataset.weeks = String(weeksUsed);
+    panel.dataset.weeks = String(weeksUsed);
+    const tStr = todayStr();
+
+    for (let i = 0; i < firstDay; i++) {
+      const c = document.createElement('div');
+      c.className = 'cell empty';
+      body.appendChild(c);
+    }
+
+    for (let d = 1; d <= daysInMonth; d++) {
+      const ds = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+      const cell = document.createElement('div');
+      cell.className = 'cell' + (ds === tStr ? ' today-cell' : '');
+
+      const dn = document.createElement('div');
+      dn.className = 'dnum';
+      dn.innerHTML = ds === tStr ? `<span>${d}</span>` : `${d}`;
+      cell.appendChild(dn);
+
+      const entries = schedule.filter(e => e.dateStr === ds);
+      entries.forEach(e => {
+        if (!(e.stepIdx in stepColorMap)) {
+          stepColorMap[e.stepIdx] = GS[Object.keys(stepColorMap).length % GS.length];
         }
+        const block = document.createElement('div');
+        block.className = `dose-block ${stepColorMap[e.stepIdx]}`;
+        const lines = Array.isArray(e.lines) ? e.lines : [];
+        block.innerHTML = `
+          <div class="med-name">${escapeHtml(e.medName)}</div>
+          ${lines.length ? lines.map(line => renderInstructionLine({
+            medName: e.medName,
+            dose: line.dose,
+            tabsPerDose: line.tabsPerDose,
+            tabStr: e.tabStr,
+            dosageForm: e.dosageForm
+          }, line.label, false)).join('') : ''}
+        `;
+        cell.appendChild(block);
       });
 
-      return schedule;
+      body.appendChild(cell);
     }
 
-    function monthRange(schedule) {
-      const first = schedule[0].date;
-      const last = schedule[schedule.length - 1].date;
-      return {
-        start: new Date(first.getFullYear(), first.getMonth(), 1),
-        end: new Date(last.getFullYear(), last.getMonth(), 1)
-      };
+    const totalCells = weeksUsed * 7;
+    const trailingCells = totalCells - (firstDay + daysInMonth);
+    for (let i = 0; i < trailingCells; i++) {
+      const c = document.createElement('div');
+      c.className = 'cell empty';
+      body.appendChild(c);
     }
 
-    function renderLegend(timeline) {
-      const validItems = timeline.filter(function (item) {
-        return item.isValid;
-      });
+    grid.appendChild(body);
+    panel.appendChild(grid);
 
-      legendEl.innerHTML = validItems
-        .map(function (item) {
-          const tone = stepTones[item.index % stepTones.length];
-          return (
-            '<div class="legend-item">' +
-            '<span class="legend-swatch ' + tone + '"></span>' +
-            "<span>Step " + (item.index + 1) + ": " + escapeHtml(doseDisplay(item.step)) + "</span>" +
-            "</div>"
-          );
-        })
-        .join("");
+    const footer = document.createElement('div');
+    footer.className = 'print-footer';
+    footer.innerHTML = "<strong>Disclaimer:</strong> This calendar is a scheduling aid only. Follow your prescriber's or pharmacist's directions and ask them before making any medication changes.";
+    panel.appendChild(footer);
+    return panel;
+  }
+
+  function renderAllMonths() {
+    const container = document.getElementById('months-container');
+    container.innerHTML = '';
+    const bounds = getScheduleBounds();
+    if (!bounds) return;
+
+    let cursor = new Date(bounds.start.getFullYear(), bounds.start.getMonth(), 1);
+    const endKey = `${bounds.end.getFullYear()}-${bounds.end.getMonth()}`;
+    while (`${cursor.getFullYear()}-${cursor.getMonth()}` <= endKey) {
+      container.appendChild(renderMonthPanel(cursor.getFullYear(), cursor.getMonth()));
+      cursor.setMonth(cursor.getMonth() + 1);
     }
+  }
 
-    function renderCalendarMonths(schedule) {
-      const lookup = new Map();
-      schedule.forEach(function (entry) {
-        lookup.set(entry.key, entry);
-      });
-
-      const bounds = monthRange(schedule);
-      const cursor = new Date(bounds.start);
-      const monthMarkup = [];
-
-      while (cursor <= bounds.end) {
-        const year = cursor.getFullYear();
-        const month = cursor.getMonth();
-        const firstWeekday = new Date(year, month, 1).getDay();
-        const daysInMonth = new Date(year, month + 1, 0).getDate();
-        const cells = [];
-
-        for (let i = 0; i < firstWeekday; i += 1) {
-          cells.push('<div class="day empty"></div>');
-        }
-
-        for (let dayNumber = 1; dayNumber <= daysInMonth; dayNumber += 1) {
-          const currentDate = new Date(year, month, dayNumber);
-          const key = dateKey(currentDate);
-          const entry = lookup.get(key);
-          const tone = entry ? stepTones[entry.stepIndex % stepTones.length] : "";
-          const chip = entry
-            ? '<div class="dose-chip ' + tone + '">' +
-                "<strong>" + escapeHtml(entry.doseText) + "</strong>" +
-                (entry.equivalentText ? "<small>" + escapeHtml(entry.equivalentText) + "</small>" : "") +
-                "<small>" + escapeHtml(entry.medication) + "</small>" +
-                (entry.notes ? "<small>" + escapeHtml(entry.notes) + "</small>" : "") +
-              "</div>"
-            : "";
-
-          cells.push(
-            '<div class="day">' +
-              '<div class="day-number">' + dayNumber + "</div>" +
-              chip +
-            "</div>"
-          );
-        }
-
-        while (cells.length % 7 !== 0) {
-          cells.push('<div class="day empty"></div>');
-        }
-
-        monthMarkup.push(
-          '<section class="month">' +
-            "<h3>" + monthLabels[month] + " " + year + "</h3>" +
-            '<div class="calendar-grid">' +
-              '<div class="day-heads">' +
-                weekdayLabels.map(function (label) {
-                  return "<div>" + label + "</div>";
-                }).join("") +
-              "</div>" +
-              '<div class="day-cells">' + cells.join("") + "</div>" +
-            "</div>" +
-          "</section>"
-        );
-
-        cursor.setMonth(cursor.getMonth() + 1);
-      }
-
-      monthsEl.innerHTML = monthMarkup.join("");
-    }
-
-    function generateCalendar() {
-      const schedule = buildSchedule();
-      if (!schedule) return;
-
-      state.schedule = schedule;
-
-      const timeline = deriveTimeline();
-      const totals = summaryTotals(timeline);
-      const medication = medicationNameInput.value.trim();
-      const patient = patientNameInput.value.trim();
-
-      calendarTitleEl.textContent = medication + " Taper Calendar";
-      calendarSubtitleEl.textContent = patient
-        ? "Prepared for " + patient + " | " + formatDate(totals.firstDate) + " to " + formatDate(totals.lastDate)
-        : formatDate(totals.firstDate) + " to " + formatDate(totals.lastDate);
-
-      renderCalendarMonths(schedule);
-      renderLegend(timeline);
-      calendarSectionEl.classList.add("visible");
-      calendarSectionEl.scrollIntoView({ behavior: "smooth", block: "start" });
-    }
-
-    function loadExample() {
-      medicationNameInput.value = "Prednisone";
-      patientNameInput.value = "";
-      startDateInput.value = todayString();
-      doseUnitSelect.value = "mg";
-      strengthInput.value = "5";
-      dosageFormSelect.value = "tablet";
-      globalNotesInput.value = "Take in the morning with food.";
-
-      resetState();
-      createStep({ dose: "40", days: "5", notes: "Take in the morning." });
-      createStep({ dose: "30", days: "5", notes: "Continue once daily." });
-      createStep({ dose: "20", days: "5", notes: "Continue once daily." });
-      createStep({ dose: "10", days: "5", notes: "Final step." });
-      calendarSectionEl.classList.remove("visible");
-      renderAll();
-    }
-
-    function resetForm() {
-      medicationNameInput.value = "";
-      patientNameInput.value = "";
-      startDateInput.value = todayString();
-      doseUnitSelect.value = "mg";
-      strengthInput.value = "";
-      dosageFormSelect.value = "tablet";
-      globalNotesInput.value = "";
-      resetState();
-      createStep();
-      monthsEl.innerHTML = "";
-      legendEl.innerHTML = "";
-      calendarSectionEl.classList.remove("visible");
-      renderAll();
-    }
-
-    document.getElementById("add-step").addEventListener("click", function () {
-      createStep();
-      renderAll();
-    });
-
-    document.getElementById("load-example").addEventListener("click", loadExample);
-    document.getElementById("reset-form").addEventListener("click", resetForm);
-    document.getElementById("generate-calendar").addEventListener("click", generateCalendar);
-    document.getElementById("print-calendar").addEventListener("click", function () {
-      window.print();
-    });
-
-    stepsEl.addEventListener("input", function (event) {
-      const target = event.target;
-      if (!(target instanceof HTMLElement)) return;
-      const field = target.getAttribute("data-field");
-      const id = Number(target.getAttribute("data-id"));
-      if (!field || !Number.isFinite(id)) return;
-      updateStep(id, field, target.value);
-    });
-
-    stepsEl.addEventListener("click", function (event) {
-      const target = event.target;
-      if (!(target instanceof HTMLElement)) return;
-      if (target.getAttribute("data-action") !== "remove-step") return;
-      const id = Number(target.getAttribute("data-id"));
-      if (!Number.isFinite(id)) return;
-      state.steps = state.steps.filter(function (step) {
-        return step.id !== id;
-      });
-      seedDefaultStep();
-      renderAll();
-    });
-
-    [
-      medicationNameInput,
-      patientNameInput,
-      startDateInput,
-      doseUnitSelect,
-      strengthInput,
-      dosageFormSelect,
-      globalNotesInput
-    ].forEach(function (element) {
-      element.addEventListener("input", renderAll);
-      element.addEventListener("change", renderAll);
-    });
-
-    resetForm();
-  </script>
+  function resetForm() {
+    shadingEnabled = true;
+    setShadingState();
+    initializeBlankForm();
+  }
+</script>
 </body>
 </html>
