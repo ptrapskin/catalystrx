@@ -398,7 +398,7 @@
       .cal-grid {
         display: grid;
         grid-template-rows: auto 1fr;
-        height: 7.50in;
+        height: 7.10in;
         box-shadow: none;
         border: 1.5px solid #000;
         overflow: visible;
@@ -418,15 +418,9 @@
       .month-panel[data-weeks='4'] .dnum { font-size: 8.5pt; margin-bottom: 3px; }
       .month-panel[data-weeks='5'] .dnum { font-size: 7.8pt; margin-bottom: 2px; }
       .month-panel[data-weeks='6'] .dnum { font-size: 7.0pt; margin-bottom: 2px; }
-      .month-panel[data-weeks='4'] .dose-block { padding: 7px 8px; font-size: 10.5pt; line-height: 1.28; }
-      .month-panel[data-weeks='5'] .dose-block { padding: 6px 7px; font-size: 9.2pt; line-height: 1.25; }
-      .month-panel[data-weeks='6'] .dose-block { padding: 5px 6px; font-size: 8.0pt; line-height: 1.22; }
-      .month-panel[data-weeks='4'] .dose-block .med-name { font-size: 11.0pt; margin-bottom: 3px; }
-      .month-panel[data-weeks='5'] .dose-block .med-name { font-size: 9.8pt; margin-bottom: 2px; }
-      .month-panel[data-weeks='6'] .dose-block .med-name { font-size: 8.5pt; margin-bottom: 2px; }
-      .month-panel[data-weeks='4'] .dose-block .instruction-line { font-size: 10.0pt; margin-top: 2px; line-height: 1.25; }
-      .month-panel[data-weeks='5'] .dose-block .instruction-line { font-size: 8.8pt; margin-top: 2px; line-height: 1.22; }
-      .month-panel[data-weeks='6'] .dose-block .instruction-line { font-size: 7.6pt; margin-top: 1px; line-height: 1.20; }
+      .dose-block { padding: 5px 7px; font-size: 10pt; line-height: 1.26; }
+      .dose-block .med-name { font-size: 1.05em; margin-bottom: 2px; }
+      .dose-block .instruction-line { font-size: 0.94em; margin-top: 2px; line-height: 1.22; }
       .print-footer { display: none; }
       .print-footer {
         display: block !important;
@@ -437,6 +431,8 @@
         margin-top: 0.06in !important;
         padding: 0 !important;
         font-weight: 400 !important;
+        break-before: avoid !important;
+        page-break-before: avoid !important;
       }
       .print-footer strong { font-weight: 700 !important; }
       .disclaimer-full { display: none !important; }
@@ -1059,7 +1055,49 @@
       container.appendChild(renderMonthPanel(cursor.getFullYear(), cursor.getMonth()));
       cursor.setMonth(cursor.getMonth() + 1);
     }
+    requestAnimationFrame(fitCellsForPrint);
   }
+
+  // ── Dynamic print fitting ─────────────────────────────────────────────────
+  // Print grid constants (CSS px at 96dpi, matching height: 7.10in in print CSS)
+  const _PGRID  = 7.10 * 96;   // total grid height in CSS px
+  const _PHDR   = 28;           // day-header row height in CSS px
+  const _PPAD   = 9;            // cell padding top+bottom in CSS px
+  const _PDNUM  = { 4: 13, 5: 12, 6: 11 }; // approx dnum height by week count
+  // Print base font (10pt) is ~1.21× larger than screen base (0.69rem≈11px),
+  // so multiply measured screen heights by this ratio to estimate print heights.
+  const _PSCALE = 1.21;
+
+  function fitCellsForPrint() {
+    document.querySelectorAll('.month-panel').forEach(panel => {
+      const wks   = parseInt(panel.dataset.weeks) || 5;
+      const rowH  = (_PGRID - _PHDR) / wks;
+      const avail = rowH - _PPAD - (_PDNUM[wks] || 12) - 2;
+
+      panel.querySelectorAll('.cell').forEach(cell => {
+        const blocks = Array.from(cell.querySelectorAll('.dose-block'));
+        if (!blocks.length) return;
+
+        // Reset any previously applied inline sizing
+        blocks.forEach(b => b.style.removeProperty('font-size'));
+
+        // Measure rendered screen height, then scale to estimated print height
+        const screenH = blocks.reduce((h, b) =>
+          h + b.offsetHeight + (parseFloat(getComputedStyle(b).marginBottom) || 0), 0);
+        const printEstH = screenH * _PSCALE;
+
+        if (printEstH > avail && avail > 0) {
+          const ratio = (avail / printEstH) * 0.93; // 7% safety margin
+          blocks.forEach(b => {
+            const fs = parseFloat(getComputedStyle(b).fontSize);
+            b.style.setProperty('font-size', Math.max(6, fs * ratio) + 'px', 'important');
+          });
+        }
+      });
+    });
+  }
+
+  window.addEventListener('beforeprint', fitCellsForPrint);
 
   function resetForm() {
     shadingEnabled = true;
