@@ -3,11 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>catylstrx.com | Coming Soon</title>
+  <title>catylstrx.com | CatylstRx Waitlist</title>
   <link rel="icon" type="image/svg+xml" href="favicon.svg" />
   <meta
     name="description"
-    content="Personalized pharmacy care and health education. catylstrx.com is coming soon."
+    content="CatylstRx is a pharmacist-developed concept exploring better medication support for patients and caregivers. Join the waitlist for updates."
   />
   <style>
     :root {
@@ -127,6 +127,53 @@
       font-family: Arial, Helvetica, sans-serif;
     }
 
+    .credibility-note {
+      margin: 18px 0 0;
+      color: var(--text);
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 0.92rem;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+    }
+
+    .info-section {
+      padding: 0 0 36px;
+    }
+
+    .section-title {
+      margin: 0 0 12px;
+      font-size: clamp(1.4rem, 3vw, 1.9rem);
+      line-height: 1.15;
+      letter-spacing: -0.02em;
+    }
+
+    .section-copy {
+      margin: 0;
+      max-width: 56ch;
+      color: var(--muted);
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 0.98rem;
+    }
+
+    .explore-list {
+      list-style: none;
+      margin: 18px 0 0;
+      padding: 0;
+      display: grid;
+      gap: 10px;
+      max-width: 58ch;
+    }
+
+    .explore-list li {
+      padding: 12px 14px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: rgba(255, 255, 255, 0.55);
+      color: var(--text);
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 0.95rem;
+    }
+
     /* ── MedCal tool section ─────────────── */
     .tools-section {
       padding: 0 0 40px;
@@ -190,7 +237,7 @@
       max-width: 48ch;
     }
 
-.tool-cta {
+    .tool-cta {
       display: inline-flex;
       align-items: center;
       gap: 6px;
@@ -220,6 +267,14 @@
       font-family: Arial, Helvetica, sans-serif;
       font-size: 0.9rem;
       color: var(--muted);
+    }
+
+    .notify-copy {
+      margin: 0 0 18px;
+      max-width: 54ch;
+      color: var(--muted);
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 0.95rem;
     }
 
     /* ── Footer ──────────────────────────── */
@@ -269,39 +324,62 @@
 
       <header class="topbar">
         <div class="wordmark">catylst<span>rx</span>.com</div>
-        <div class="badge">Coming Soon</div>
+        <div class="badge">In Development</div>
       </header>
 
       <main>
 
         <section class="hero" aria-labelledby="hero-title">
-          <p class="eyebrow">Your Personal Pharmacist &amp; Advocate</p>
-          <h1 id="hero-title">When was the last time your pharmacist called to check on you?</h1>
+          <p class="eyebrow">Pharmacist-Developed Concept</p>
+          <h1 id="hero-title">CatylstRx is exploring a better model for medication support.</h1>
           <p class="tagline">
-            Most pharmacists want to help. But long lines and busy counters don&rsquo;t leave much room for real conversations. Questions go unanswered. Refills get missed. Medicines get taken the wrong way &mdash; or not at all. And finding ways to save money? That rarely happens at all.
+            CatylstRx is an early-stage concept focused on clearer, more personal medication guidance for patients and caregivers, especially when treatment gets complicated.
           </p>
           <p class="tagline">
-            Catylstrx is being built to change that. Your own personal pharmacist and advocate &mdash; someone who knows your medications, answers your questions, makes sure everything is being taken safely and correctly, helps navigate your insurance, and fights to find you savings. For you, or for a parent you&rsquo;re helping care for.
+            The idea is to make medication support feel more useful in real life: better guidance, help with regimen complexity, and less friction around cost and coverage questions.
+          </p>
+          <p class="credibility-note">A pharmacist-developed concept focused on better medication support.</p>
+        </section>
+
+        <section class="info-section" aria-labelledby="exploring-title">
+          <p class="section-label">What CatylstRx is exploring</p>
+          <h2 class="section-title" id="exploring-title">A more practical layer of support around medications.</h2>
+          <ul class="explore-list">
+            <li>Personalized medication guidance that is easier to understand and act on</li>
+            <li>Support for complex regimens, changes, and day-to-day medication organization</li>
+            <li>Help navigating medication costs, coverage questions, and insurance friction</li>
+            <li>Support designed for both patients and the caregivers helping manage care</li>
+          </ul>
+        </section>
+
+        <section class="info-section" aria-labelledby="why-title">
+          <p class="section-label">Why this exists</p>
+          <h2 class="section-title" id="why-title">Many medication problems start with limited access to meaningful guidance.</h2>
+          <p class="section-copy">
+            Patients often leave with prescriptions but not enough time, follow-up, or practical pharmacist support to use them confidently. CatylstRx is being developed by a pharmacist to explore a more helpful approach.
           </p>
         </section>
 
         <section class="tools-section" aria-labelledby="tools-label">
-          <p class="section-label" id="tools-label">Free tools, available now</p>
+          <p class="section-label" id="tools-label">A free side tool</p>
 
           <div class="tool-card">
             <div class="tool-icon" aria-hidden="true">💊</div>
             <div class="tool-body">
               <h2 class="tool-name">Medication Taper Calendar</h2>
               <p class="tool-desc">
-                Build a personalized day-by-day tapering schedule for any medication. Enter your doses and step durations, then generate a printable monthly calendar.
+                While building the broader CatylstRx concept, this simple taper calendar was created as a standalone planning tool. It helps organize dose step-down schedules and is separate from the main idea being explored here.
               </p>
-<a class="tool-cta" href="taper-calendar.html">Open MedCal &rarr;</a>
+              <a class="tool-cta" href="taper-calendar.html">Open taper calendar &rarr;</a>
             </div>
           </div>
         </section>
 
         <section class="notify-section" aria-labelledby="notify-label">
-          <p class="notify-label" id="notify-label">Get notified when we launch &mdash; leave your email.</p>
+          <p class="notify-label" id="notify-label">Join the waitlist for updates and early access.</p>
+          <p class="notify-copy">
+            If this concept feels relevant, leave your information to hear about progress, future tools, and early access opportunities. This is a low-commitment way to express interest while CatylstRx is still being developed.
+          </p>
           <iframe data-tally-src="https://tally.so/embed/aQxLWB?alignLeft=1&hideTitle=1&transparentBackground=1&dynamicHeight=1" loading="lazy" width="100%" height="632" frameborder="0" marginheight="0" marginwidth="0" title="null"></iframe>
           <script>var d=document,w="https://tally.so/widgets/embed.js",v=function(){"undefined"!=typeof Tally?Tally.loadEmbeds():d.querySelectorAll("iframe[data-tally-src]:not([src])").forEach((function(e){e.src=e.dataset.tallySrc}))};if("undefined"!=typeof Tally)v();else if(d.querySelector('script[src="'+w+'"]')==null){var s=d.createElement("script");s.src=w,s.onload=v,s.onerror=v,d.body.appendChild(s);}</script>
         </section>
