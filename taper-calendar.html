@@ -1,9 +1,9 @@
-<<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>MedCal – Medication Taper Calendar</title>
+  <title>TaperCal – Medication Taper Calendar</title>
   <link rel="icon" type="image/svg+xml" href="favicon.svg" />
   <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet"/>
   <style>
@@ -34,15 +34,6 @@
     header .sub { font-size: 0.76rem; opacity: 0.6; font-weight: 300; }
 
     /* ── Disclaimer banner ───────────────── */
-    .disclaimer-banner {
-      background: #dbe2ef;
-      border-bottom: 2px solid #3f72af;
-      padding: 8px 28px;
-      font-size: 0.75rem; color: #112d4e; line-height: 1.5;
-      display: flex; gap: 8px; align-items: flex-start;
-    }
-    .disclaimer-banner .di { flex-shrink: 0; margin-top: 1px; }
-
     /* ── Layout ──────────────────────────── */
     .wrap { max-width: 960px; margin: 0 auto; padding: 24px 18px 60px; }
 
@@ -246,6 +237,44 @@
     }
     .summary-bar strong { font-weight: 600; }
 
+    .tool-disclaimer {
+      margin-top: 14px;
+      padding: 12px 14px;
+      border: 1px solid #dbe2ef;
+      border-radius: 6px;
+      background: #f7f9fc;
+      font-size: 0.72rem;
+      color: #4e6d8e;
+      line-height: 1.55;
+    }
+
+    .tool-disclaimer strong {
+      color: #112d4e;
+    }
+
+    .site-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-top: 26px;
+      font-size: 0.78rem;
+      color: #4e6d8e;
+    }
+
+    .site-footer a {
+      color: inherit;
+      text-decoration: underline;
+      text-underline-offset: 0.16em;
+    }
+
+    .footer-links {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 14px;
+    }
+
     /* ── Calendar ────────────────────────── */
     #cal-section { display: none; }
     #cal-section.visible { display: block; }
@@ -341,19 +370,12 @@
     }
 
     /* ── Disclaimer full ─────────────────── */
-    .disclaimer-full {
-      background: #f0f4f9; border: 1px solid #b0bfd4; border-radius: 6px;
-      padding: 8px 12px; margin-top: 12px;
-      font-size: 8pt; color: #112d4e; line-height: 1.35;
-    }
-    .disclaimer-full strong { display: inline; margin-right: 4px; font-size: 8pt; }
-
     /* ── Print ───────────────────────────── */
     @media print {
       @page { size: letter landscape; margin: 0.18in; }
       html, body { background: #fff; height: auto; }
       body { margin: 0 !important; }
-      header, .disclaimer-banner, .card { display: none !important; }
+      header, .card, .site-footer { display: none !important; }
       .wrap {
         padding: 0 !important;
         margin: 0 !important;
@@ -424,7 +446,7 @@
       .print-footer { display: none; }
       .print-footer {
         display: block !important;
-        font-size: 8pt !important;
+        font-size: 10pt !important;
         line-height: 1.15 !important;
         color: #000 !important;
         text-align: center !important;
@@ -435,7 +457,6 @@
         page-break-before: avoid !important;
       }
       .print-footer strong { font-weight: 700 !important; }
-      .disclaimer-full { display: none !important; }
     }
 
     @media(max-width:980px){
@@ -463,6 +484,17 @@
       .dose-block { font-size: 0.6rem; padding: 4px 5px; }
       .dose-block .instruction-line { font-size: 0.58rem; }
     }
+
+    @media(max-width:700px){
+      .site-footer {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .footer-links {
+        justify-content: flex-start;
+      }
+    }
   </style>
 </head>
 <body>
@@ -470,12 +502,12 @@
 <header>
   <div class="logo-box">💊</div>
   <div>
-    <h1>MedCal</h1>
+    <h1>TaperCal</h1>
     <p class="sub">Medication Taper Calendar</p>
   </div>
 </header>
 
-<div class="disclaimer-banner">
+<div class="disclaimer-banner" hidden>
   <span class="di">⚠️</span>
   <span><strong>DISCLAIMER:</strong> This tool is a scheduling aid only and does not constitute medical advice. Always follow instructions from your prescribing physician or pharmacist. Use at your own risk.</span>
 </div>
@@ -531,6 +563,10 @@
       <button type="button" class="btn btn-ghost" onclick="resetForm()">Reset</button>
     </div>
 
+    <aside class="tool-disclaimer" aria-labelledby="medcal-disclaimer-title">
+      <strong id="medcal-disclaimer-title">Disclaimer:</strong> This tool generates medication taper calendars based on user-entered information. Output should be reviewed and verified by the prescribing clinician before use. Always confirm dosing, duration, and patient instructions according to clinical judgment, product labeling, and institutional protocols.
+    </aside>
+
     <div class="summary-bar" id="summary-bar" style="display:none"></div>
   </div>
 
@@ -544,6 +580,14 @@
     </div>
     <div id="months-container" class="months-container"></div>
   </div>
+
+  <footer class="site-footer">
+    <a href="/">CatylstRx</a>
+    <div class="footer-links">
+      <a href="/disclaimer">Disclaimer</a>
+      <a href="mailto:admin@catylstrx.com">admin@catylstrx.com</a>
+    </div>
+  </footer>
 
 </div>
 
@@ -1038,7 +1082,7 @@
 
     const footer = document.createElement('div');
     footer.className = 'print-footer';
-    footer.innerHTML = "<strong>Disclaimer:</strong> This calendar is a scheduling aid only. Follow your prescriber's or pharmacist's directions and ask them before making any medication changes.";
+    footer.innerHTML = "<strong>Disclaimer:</strong> This calendar summarizes taper instructions from your prescriber and is provided for convenience; follow your prescriber&apos;s instructions and contact your prescriber or pharmacist if anything is unclear.";
     panel.appendChild(footer);
     return panel;
   }
