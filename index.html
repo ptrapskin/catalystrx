@@ -122,11 +122,18 @@
 
     .topbar {
       display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 16px;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 6px;
       padding: 4px 0 26px;
       border-bottom: 1px solid rgba(31, 42, 55, 0.08);
+    }
+
+    .site-tagline {
+      margin: 0;
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 0.95rem;
+      color: var(--muted);
     }
 
     .wordmark {
@@ -165,16 +172,6 @@
       padding-top: 34px;
     }
 
-    .hero {
-      display: grid;
-      grid-template-columns: 1fr;
-      padding: 36px;
-      border: 1px solid var(--line);
-      border-radius: 32px;
-      background: linear-gradient(180deg, var(--surface) 0%, rgba(255, 255, 255, 0.72) 100%);
-      box-shadow: var(--shadow);
-    }
-
     h1,
     h2,
     h3,
@@ -186,19 +183,6 @@
     h2,
     h3 {
       letter-spacing: -0.03em;
-    }
-
-    h1 {
-      max-width: 13ch;
-      font-size: clamp(2rem, 4.1vw, 3.15rem);
-      line-height: 1.08;
-      text-wrap: balance;
-    }
-
-    .hero-copy {
-      max-width: 58ch;
-      font-size: 1rem;
-      line-height: 1.75;
     }
 
     .tools-section,
@@ -223,6 +207,11 @@
 
     .section-label {
       margin-bottom: 0;
+    }
+
+    .tools-list {
+      display: grid;
+      gap: 16px;
     }
 
     .tool-row {
@@ -400,7 +389,6 @@
         padding: 18px;
       }
 
-      .hero,
       .tools-section {
         padding: 22px;
       }
@@ -426,29 +414,46 @@
     <div class="shell">
       <header class="topbar">
         <div class="wordmark">catylst<span>rx</span>.com</div>
+        <p class="site-tagline">Practical tools for pharmacists and clinicians.</p>
       </header>
 
       <main class="main-content">
-        <section class="hero" aria-labelledby="hero-title">
-          <div class="hero-main">
-            <h1 id="hero-title">Practical tools for pharmacists and clinicians.</h1>
-          </div>
-        </section>
-
         <section class="tools-section" id="tools" aria-labelledby="tools-title">
           <div class="section-heading">
             <h2 class="section-label" id="tools-title">Available Tools</h2>
           </div>
 
-          <article class="tool-row">
-            <div class="tool-icon" aria-hidden="true">&#128138;</div>
-            <div class="tool-body">
-              <h3 class="tool-name">TaperCal</h3>
-              <p class="tool-meta">TaperCal v1.0<br />Last updated: March 2026</p>
-              <p class="tool-copy">Create clear, print-friendly medication taper calendars that patients can easily follow. Often used for prednisone tapers and other medications that require gradual dose reduction.</p>
-            </div>
-            <a class="button" href="taper-calendar.html">Launch TaperCal</a>
-          </article>
+          <div class="tools-list">
+            <article class="tool-row">
+              <div class="tool-icon" aria-hidden="true">&#128138;</div>
+              <div class="tool-body">
+                <h3 class="tool-name">TaperCal</h3>
+                <p class="tool-meta">TaperCal v1.0<br />Last updated: March 2026</p>
+                <p class="tool-copy">Create clear, print-friendly medication taper calendars that patients can easily follow. Often used for prednisone tapers and other medications that require gradual dose reduction.</p>
+              </div>
+              <a class="button" href="taper-calendar.html">Launch TaperCal</a>
+            </article>
+
+            <article class="tool-row">
+              <div class="tool-icon" aria-hidden="true">&#128269;</div>
+              <div class="tool-body">
+                <h3 class="tool-name">Excipient Finder</h3>
+                <p class="tool-meta">Excipient Finder v1.0<br />Last updated: March 2026</p>
+                <p class="tool-copy">Search FDA-listed drug products by name or NDC and filter by inactive ingredients. Useful for identifying alternatives for patients with excipient allergies, sensitivities, or osmotic concerns.</p>
+              </div>
+              <a class="button" href="https://tools.catylstrx.com/">Launch Excipient Finder</a>
+            </article>
+
+            <article class="tool-row">
+              <div class="tool-icon" aria-hidden="true">&#9888;&#65039;</div>
+              <div class="tool-body">
+                <h3 class="tool-name">Sugar Alcohol Screener</h3>
+                <p class="tool-meta">v1.0<br />Last updated: March 2026</p>
+                <p class="tool-copy">Identify liquid drug products containing sugar alcohol ingredients (e.g., sorbitol, maltitol, xylitol, mannitol, isomalt). Results are grouped by active ingredient with drilldown to full ingredient list.</p>
+              </div>
+              <a class="button" href="https://tools.catylstrx.com/sugar-alcohol-risk">Launch Sugar Alcohol Risk</a>
+            </article>
+          </div>
         </section>
 
       </main>
