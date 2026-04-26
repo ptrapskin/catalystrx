@@ -354,6 +354,7 @@
     .cell:nth-child(7n) { border-right: none; }
     .cell.empty { background: #f3efe8; }
     .cell.today-cell { background: #ede8df; }
+    .cell.compact-cell { min-height: 0 !important; padding-top: 3px; padding-bottom: 3px; }
 
     .dnum { font-size: 0.76rem; font-weight: 700; color: #5f6c7a; margin-bottom: 4px; }
     .today-cell .dnum { color: #1f2a37; text-decoration: underline; }
@@ -369,6 +370,9 @@
       border: 1px solid;
       -webkit-print-color-adjust: exact;
       print-color-adjust: exact;
+      overflow-wrap: break-word;
+      word-break: break-word;
+      overflow: hidden;
     }
     .dose-block .med-name { font-weight: 700; font-size: 0.7rem; margin-bottom: 3px; }
     .dose-block .instruction-line { font-size: 0.66rem; margin-top: 2px; line-height: 1.3; }
@@ -609,6 +613,8 @@
       <h2 id="cal-heading">Taper Calendar</h2>
       <div class="cal-nav">
         <button type="button" class="shade-toggle-btn" id="shade-toggle-btn" aria-pressed="true" onclick="toggleShading()">Shading On</button>
+        <button type="button" class="shade-toggle-btn" id="detail-toggle-btn" aria-pressed="false" onclick="toggleDetail()">Simple View</button>
+        <button type="button" class="shade-toggle-btn" id="compact-rows-btn" aria-pressed="false" onclick="toggleCompactRows()">Compact Rows</button>
         <button type="button" class="shade-toggle-btn" id="print-btn" onclick="window.print()">Print</button>
       </div>
     </div>
@@ -634,6 +640,8 @@
   let steps = [];
   let schedule = [];
   let shadingEnabled = true;
+  let simpleMode = false;
+  let compactRows = false;
   const GS = ['gs-0','gs-1','gs-2','gs-3'];
   const stepColorMap = {};
 
@@ -692,7 +700,15 @@
   function addStep(dose, times, days) {
     stepCount++;
     const id = stepCount;
-    const timeDoses = createTimeDoseMap(dose, times);
+    // If called with no arguments and a previous step exists, copy it
+    let timeDoses;
+    if (dose === undefined && times === undefined && steps.length > 0) {
+      const prev = steps[steps.length - 1];
+      timeDoses = Object.assign({}, prev.timeDoses);
+      if (days === undefined) days = prev.days;
+    } else {
+      timeDoses = createTimeDoseMap(dose, times);
+    }
     steps.push({
       id,
       days: days !== undefined ? days : '',
@@ -857,11 +873,95 @@
   function buildInstructionText(entry, label, includeMedName = false) {
     const lead = label ? `${timeLead(label)} ` : '';
     const dosageForm = entry && entry.dosageForm ? entry.dosageForm : getDosageForm();
+    const medPart = includeMedName ? `${entry.medName} — ` : '';
+    if (simpleMode) {
+      const unitPart = entry.tabsPerDose !== null && entry.tabsPerDose !== undefined
+        ? `Take ${formatDoseUnitCount(entry.tabsPerDose, 'label', dosageForm)}`
+        : `Take ${formatNumber(entry.dose)} mg`;
+      return `${medPart}${lead}${unitPart}`.trim();
+    }
     const unitPart = entry.tabsPerDose !== null && entry.tabsPerDose !== undefined
       ? `Take ${formatDoseUnitCount(entry.tabsPerDose, 'label', dosageForm)} (${tabletStrengthLabel(entry)}) for a total dose of ${formatNumber(entry.dose)} mg`
       : `Take total dose ${formatNumber(entry.dose)} mg`;
-    const medPart = includeMedName ? `${entry.medName} — ` : '';
     return `${medPart}${lead}${unitPart}`.trim();
+  }
+
+  function toggleDetail() {
+    simpleMode = !simpleMode;
+    const btn = document.getElementById('detail-toggle-btn');
+    if (btn) {
+      btn.textContent = simpleMode ? 'Full View' : 'Simple View';
+      btn.setAttribute('aria-pressed', simpleMode ? 'true' : 'false');
+    }
+    if (document.getElementById('cal-section').classList.contains('visible')) {
+      renderAllMonths();
+    }
+  }
+
+  function toggleCompactRows() {
+    compactRows = !compactRows;
+    const btn = document.getElementById('compact-rows-btn');
+    if (btn) {
+      btn.textContent = compactRows ? 'Equal Rows' : 'Compact Rows';
+      btn.setAttribute('aria-pressed', compactRows ? 'true' : 'false');
+    }
+    if (document.getElementById('cal-section').classList.contains('visible')) {
+      applyCompactRows();
+      requestAnimationFrame(() => requestAnimationFrame(fitCellsForPrint));
+    }
+  }
+
+  const COMPACT_ROW_H = 26;  // px — height of an empty row (day number only)
+
+  function applyCompactRows() {
+    document.querySelectorAll('.cal-body').forEach(body => {
+      const cells = Array.from(body.children);
+      const wks = parseInt(body.dataset.weeks) || 5;
+
+      // Reset
+      cells.forEach(c => {
+        c.classList.remove('compact-cell');
+        c.style.removeProperty('height');
+        c.style.removeProperty('min-height');
+        c.style.removeProperty('overflow');
+      });
+      body.style.removeProperty('grid-template-rows');
+
+      if (!compactRows) return;
+
+      // Determine which rows have dose content
+      const rowHasContent = [];
+      for (let row = 0; row < wks; row++) {
+        rowHasContent.push(
+          cells.slice(row * 7, row * 7 + 7).some(c => c.querySelector('.dose-block'))
+        );
+      }
+
+      const contentRowCount = rowHasContent.filter(Boolean).length || 1;
+      const emptyRowCount   = wks - contentRowCount;
+
+      // Use print grid dimensions to calculate content row height
+      const dnumH          = (_PDNUM[wks] || 12);
+      const totalGridH     = _PGRID - _PHDR;
+      const spaceForContent = totalGridH - emptyRowCount * COMPACT_ROW_H;
+      const contentRowH    = Math.floor(spaceForContent / contentRowCount);
+
+      // Apply explicit heights to every cell so offsetHeight is correct for font fitting
+      for (let row = 0; row < wks; row++) {
+        const rowCells = cells.slice(row * 7, row * 7 + 7);
+        const isContent = rowHasContent[row];
+        const h = isContent ? contentRowH : COMPACT_ROW_H;
+        rowCells.forEach(c => {
+          c.style.setProperty('height', h + 'px', 'important');
+          c.style.setProperty('min-height', '0', 'important');
+          if (!isContent) {
+            c.classList.add('compact-cell');
+            c.style.setProperty('overflow', 'hidden', 'important');
+          }
+          // Content cells: let them show fully so we can measure real overflow
+        });
+      }
+    });
   }
 
   function setShadingState() {
@@ -1091,8 +1191,10 @@
         const block = document.createElement('div');
         block.className = `dose-block ${stepColorMap[e.stepIdx]}`;
         const lines = Array.isArray(e.lines) ? e.lines : [];
+        const strengthSuffix = simpleMode && e.tabStr && isFinite(parseFloat(e.tabStr))
+          ? ` ${formatNumber(parseFloat(e.tabStr))} mg` : '';
         block.innerHTML = `
-          <div class="med-name">${escapeHtml(e.medName)}</div>
+          <div class="med-name">${escapeHtml(e.medName)}${escapeHtml(strengthSuffix)}</div>
           ${lines.length ? lines.map(line => renderInstructionLine({
             medName: e.medName,
             dose: line.dose,
@@ -1137,7 +1239,10 @@
       container.appendChild(renderMonthPanel(cursor.getFullYear(), cursor.getMonth()));
       cursor.setMonth(cursor.getMonth() + 1);
     }
-    requestAnimationFrame(fitCellsForPrint);
+    requestAnimationFrame(() => {
+      applyCompactRows();
+      requestAnimationFrame(fitCellsForPrint);  // second frame: layout has settled
+    });
   }
 
   // ── Dynamic print fitting ─────────────────────────────────────────────────
@@ -1152,28 +1257,81 @@
 
   function fitCellsForPrint() {
     document.querySelectorAll('.month-panel').forEach(panel => {
-      const wks   = parseInt(panel.dataset.weeks) || 5;
-      const rowH  = (_PGRID - _PHDR) / wks;
-      const avail = rowH - _PPAD - (_PDNUM[wks] || 12) - 2;
+      const wks  = parseInt(panel.dataset.weeks) || 5;
+      const body = panel.querySelector('.cal-body');
+      const dnumH = (_PDNUM[wks] || 12);
+
+      // When compact rows are on, content rows share more print height
+      let availForContentRow;
+      if (compactRows && body) {
+        const cells = Array.from(body.children);
+        const rowHasContent = [];
+        for (let row = 0; row < wks; row++) {
+          rowHasContent.push(
+            cells.slice(row * 7, row * 7 + 7).some(c => c.querySelector('.dose-block'))
+          );
+        }
+        const contentRowCount = rowHasContent.filter(Boolean).length || 1;
+        const emptyRowCount   = wks - contentRowCount;
+        const compactRowH     = dnumH + _PPAD; // just day number + padding
+        const totalForContent = _PGRID - _PHDR - emptyRowCount * compactRowH;
+        const contentRowH     = totalForContent / contentRowCount;
+        availForContentRow    = contentRowH - _PPAD - dnumH - 2;
+      } else {
+        const rowH         = (_PGRID - _PHDR) / wks;
+        availForContentRow = rowH - _PPAD - dnumH - 2;
+      }
 
       panel.querySelectorAll('.cell').forEach(cell => {
+        if (cell.classList.contains('compact-cell')) return;
         const blocks = Array.from(cell.querySelectorAll('.dose-block'));
         if (!blocks.length) return;
 
-        // Reset any previously applied inline sizing
-        blocks.forEach(b => b.style.removeProperty('font-size'));
+        blocks.forEach(b => {
+          [b, ...b.querySelectorAll('.med-name, .instruction-line')].forEach(el => el.style.removeProperty('font-size'));
+        });
 
-        // Measure rendered screen height, then scale to estimated print height
-        const screenH = blocks.reduce((h, b) =>
+        const dnum = cell.querySelector('.dnum');
+        const dnumH = dnum ? dnum.offsetHeight + (parseFloat(getComputedStyle(dnum).marginBottom) || 2) : 14;
+        const padT  = parseFloat(getComputedStyle(cell).paddingTop)    || 0;
+        const padB  = parseFloat(getComputedStyle(cell).paddingBottom) || 0;
+        const screenAvail = cell.offsetHeight - dnumH - padT - padB - 2;
+
+        const contentH = blocks.reduce((h, b) =>
           h + b.offsetHeight + (parseFloat(getComputedStyle(b).marginBottom) || 0), 0);
-        const printEstH = screenH * _PSCALE;
 
-        if (printEstH > avail && avail > 0) {
-          const ratio = (avail / printEstH) * 0.93; // 7% safety margin
-          blocks.forEach(b => {
-            const fs = parseFloat(getComputedStyle(b).fontSize);
-            b.style.setProperty('font-size', Math.max(6, fs * ratio) + 'px', 'important');
+        if (screenAvail <= 0 || contentH <= 0) return;
+
+        const MAX_FS = 18; // px — hard cap to prevent runaway scaling
+        const printRatio  = (availForContentRow / (contentH * _PSCALE)) * 0.93;
+        const screenRatio = (screenAvail / contentH) * 0.93;
+        let ratio = Math.min(printRatio, screenRatio);
+
+        if (Math.abs(ratio - 1) < 0.05) return;
+
+        // Apply scaled font size, capped at MAX_FS
+        blocks.forEach(b => {
+          [b, ...b.querySelectorAll('.med-name, .instruction-line')].forEach(el => {
+            const fs    = parseFloat(getComputedStyle(el).fontSize);
+            const newFs = ratio > 1 ? Math.min(fs * ratio, MAX_FS) : Math.max(6, fs * ratio);
+            el.style.setProperty('font-size', newFs + 'px', 'important');
           });
+        });
+
+        // Re-measure after applying — larger font causes more wrapping.
+        // Back off if content is now taller than available space.
+        if (ratio > 1) {
+          const actualH = blocks.reduce((h, b) =>
+            h + b.offsetHeight + (parseFloat(getComputedStyle(b).marginBottom) || 0), 0);
+          if (actualH > screenAvail) {
+            const backoff = (screenAvail / actualH) * 0.95;
+            blocks.forEach(b => {
+              [b, ...b.querySelectorAll('.med-name, .instruction-line')].forEach(el => {
+                const fs = parseFloat(getComputedStyle(el).fontSize);
+                el.style.setProperty('font-size', Math.max(6, fs * backoff) + 'px', 'important');
+              });
+            });
+          }
         }
       });
     });
