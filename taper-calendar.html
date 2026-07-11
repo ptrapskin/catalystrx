@@ -246,6 +246,7 @@
     .btn-del:hover { background: rgba(31, 42, 55, 0.15); }
 
     .taper-footer { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 8px; }
+    .taper-footer-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-left: auto; }
 
     .btn {
       padding: 9px 18px; border-radius: 6px;
@@ -282,6 +283,32 @@
     .tool-disclaimer strong {
       color: #1f2a37;
     }
+
+    .directions-panel {
+      margin-top: 14px;
+      padding: 14px 16px;
+      border: 1px solid rgba(31, 42, 55, 0.15);
+      border-radius: 6px;
+      background: #faf7f2;
+      font-size: 0.82rem;
+      color: #1f2a37;
+      line-height: 1.55;
+    }
+    .directions-section + .directions-section { margin-top: 12px; }
+    .directions-title {
+      font-weight: 700;
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+      color: #5f6c7a;
+      margin-bottom: 6px;
+    }
+    .directions-panel ol, .directions-panel ul {
+      margin: 0;
+      padding-left: 20px;
+    }
+    .directions-panel li { margin-bottom: 4px; }
+    .directions-panel li:last-child { margin-bottom: 0; }
 
     .site-footer {
       display: grid;
@@ -608,8 +635,31 @@
     <div class="taper-footer">
       <button type="button" class="btn btn-outline" onclick="addStep()">＋ Add Step</button>
       <button type="button" class="btn btn-primary" onclick="generate()">Generate Calendar →</button>
-      <button type="button" class="btn btn-ghost" onclick="loadExample()">Load Example</button>
       <button type="button" class="btn btn-ghost" onclick="resetForm()">Reset</button>
+      <div class="taper-footer-right">
+        <button type="button" class="btn btn-ghost" id="directions-toggle-btn" aria-pressed="false" onclick="toggleDirections()">Directions</button>
+        <button type="button" class="btn btn-ghost" onclick="loadExample()">Load Example</button>
+      </div>
+    </div>
+
+    <div id="directions-panel" class="directions-panel" hidden>
+      <div class="directions-section">
+        <div class="directions-title">Creating a Calendar</div>
+        <ol>
+          <li>Enter the medication name, unit strength, dosage form, and start date.</li>
+          <li>For each taper step, check the times of day a dose is taken, enter the dose for each time, and enter how many days that step lasts. Use <strong>+ Add Step</strong> to add more steps.</li>
+          <li>Click <strong>Generate Calendar →</strong> to build the printable calendar.</li>
+        </ol>
+      </div>
+      <div class="directions-section">
+        <div class="directions-title">Adjusting the Calendar &amp; Print Size</div>
+        <ul>
+          <li><strong>Shading On/Off</strong> — toggles the color coding used to tell taper steps apart.</li>
+          <li><strong>Simple View / Full View</strong> — Simple View shows a condensed dose line; Full View spells out the tablet count and strength.</li>
+          <li><strong>Compact Rows</strong> — shrinks empty calendar weeks so days with doses get more room, useful when printing.</li>
+          <li><strong>Print</strong> — opens the print dialog. Each month automatically splits across two pages so the text prints large and readable.</li>
+        </ul>
+      </div>
     </div>
 
     <aside class="tool-disclaimer" aria-labelledby="medcal-disclaimer-title">
@@ -1002,6 +1052,17 @@
     refreshSteps();
   }
 
+  function toggleDirections() {
+    const panel = document.getElementById('directions-panel');
+    const btn = document.getElementById('directions-toggle-btn');
+    const visible = panel.hasAttribute('hidden');
+    panel.toggleAttribute('hidden', !visible);
+    if (btn) {
+      btn.setAttribute('aria-pressed', visible ? 'true' : 'false');
+      btn.textContent = visible ? 'Hide Directions' : 'Directions';
+    }
+  }
+
   function escapeHtml(text) {
     return String(text)
       .replace(/&/g, '&amp;')
@@ -1231,7 +1292,7 @@
         block.className = `dose-block ${stepColorMap[e.stepIdx]}`;
         const lines = Array.isArray(e.lines) ? e.lines : [];
         const strengthSuffix = simpleMode && e.tabStr && isFinite(parseFloat(e.tabStr))
-          ? ` ${formatNumber(parseFloat(e.tabStr))} mg` : '';
+          ? ` ${formatNumber(parseFloat(e.tabStr))} mg ${unitWord(1, e.dosageForm)}` : '';
         block.innerHTML = `
           <div class="med-name">${escapeHtml(e.medName)}${escapeHtml(strengthSuffix)}</div>
           ${lines.length ? lines.map(line => renderInstructionLine({
