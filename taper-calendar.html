@@ -331,6 +331,13 @@
       font-weight: 400;
       color: #1f2a37;
       text-align: center;
+      margin: 0 0 4px;
+    }
+    .month-subtitle {
+      font-family: Arial, Helvetica, sans-serif;
+      font-size: 0.78rem;
+      color: #5f6c7a;
+      text-align: center;
       margin: 0 0 12px;
     }
     .cal-nav button, .shade-toggle-btn {
@@ -453,7 +460,15 @@
         line-height: 1.02 !important;
         font-weight: 800 !important;
         text-align: center !important;
-        margin: 0 0 0.04in 0 !important;
+        margin: 0 0 0.02in 0 !important;
+        color: #000 !important;
+      }
+      .month-subtitle {
+        display: block !important;
+        font-size: 11pt !important;
+        font-weight: 400 !important;
+        text-align: center !important;
+        margin: 0 0 0.05in 0 !important;
         color: #000 !important;
       }
       .cal-grid {
@@ -467,18 +482,14 @@
       .day-heads { background: #1f2a37 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
       .day-heads div { padding: 8px 0; font-size: 9.5pt; }
       .cal-body { align-content: stretch; }
-      .cal-body[data-weeks='4'] { grid-template-rows: repeat(4, minmax(0, 1fr)); }
-      .cal-body[data-weeks='5'] { grid-template-rows: repeat(5, minmax(0, 1fr)); }
-      .cal-body[data-weeks='6'] { grid-template-rows: repeat(6, minmax(0, 1fr)); }
       .cell {
         min-height: 0 !important;
         height: auto;
         overflow: hidden;
         padding: 5px 5px 4px 5px;
       }
-      .month-panel[data-weeks='4'] .dnum { font-size: 8.5pt; margin-bottom: 3px; }
-      .month-panel[data-weeks='5'] .dnum { font-size: 7.8pt; margin-bottom: 2px; }
-      .month-panel[data-weeks='6'] .dnum { font-size: 7.0pt; margin-bottom: 2px; }
+      .month-panel[data-weeks='2'] .dnum { font-size: 11pt; margin-bottom: 4px; }
+      .month-panel[data-weeks='3'] .dnum { font-size: 10pt; margin-bottom: 3px; }
       .dose-block { padding: 5px 7px; font-size: 10pt; line-height: 1.26; }
       .dose-block .med-name { font-size: 1.05em; margin-bottom: 2px; }
       .dose-block .instruction-line { font-size: 0.94em; margin-top: 2px; line-height: 1.22; }
@@ -925,9 +936,11 @@
         c.style.removeProperty('min-height');
         c.style.removeProperty('overflow');
       });
-      body.style.removeProperty('grid-template-rows');
 
-      if (!compactRows) return;
+      if (!compactRows) {
+        body.style.setProperty('grid-template-rows', `repeat(${wks}, minmax(0, 1fr))`);
+        return;
+      }
 
       // Determine which rows have dose content
       const rowHasContent = [];
@@ -937,28 +950,32 @@
         );
       }
 
-      const contentRowCount = rowHasContent.filter(Boolean).length || 1;
-      const emptyRowCount   = wks - contentRowCount;
+      const contentRowCount = rowHasContent.filter(Boolean).length;
+      if (contentRowCount === 0) {
+        // Nothing to compact for (e.g. a trailing page past the end of the schedule) —
+        // fall back to an evenly divided grid instead of squeezing every row to
+        // COMPACT_ROW_H and leaving the rest of the page blank.
+        body.style.setProperty('grid-template-rows', `repeat(${wks}, minmax(0, 1fr))`);
+        return;
+      }
+      const emptyRowCount = wks - contentRowCount;
 
       // Use print grid dimensions to calculate content row height
-      const dnumH          = (_PDNUM[wks] || 12);
-      const totalGridH     = _PGRID - _PHDR;
+      const totalGridH      = _PGRID - _PHDR;
       const spaceForContent = totalGridH - emptyRowCount * COMPACT_ROW_H;
-      const contentRowH    = Math.floor(spaceForContent / contentRowCount);
+      const contentRowH     = Math.floor(spaceForContent / contentRowCount);
 
-      // Apply explicit heights to every cell so offsetHeight is correct for font fitting
+      // Grid tracks sized with `1fr` divide space equally regardless of a cell's own
+      // height style, so empty rows must get their own explicit row track — otherwise
+      // content rows overflow into the space reserved for the next row.
+      const rowHeights = rowHasContent.map(has => has ? contentRowH : COMPACT_ROW_H);
+      body.style.setProperty('grid-template-rows', rowHeights.map(h => `${h}px`).join(' '));
+
       for (let row = 0; row < wks; row++) {
-        const rowCells = cells.slice(row * 7, row * 7 + 7);
-        const isContent = rowHasContent[row];
-        const h = isContent ? contentRowH : COMPACT_ROW_H;
-        rowCells.forEach(c => {
-          c.style.setProperty('height', h + 'px', 'important');
-          c.style.setProperty('min-height', '0', 'important');
-          if (!isContent) {
-            c.classList.add('compact-cell');
-            c.style.setProperty('overflow', 'hidden', 'important');
-          }
-          // Content cells: let them show fully so we can measure real overflow
+        if (rowHasContent[row]) continue;
+        cells.slice(row * 7, row * 7 + 7).forEach(c => {
+          c.classList.add('compact-cell');
+          c.style.setProperty('overflow', 'hidden', 'important');
         });
       }
     });
@@ -1136,14 +1153,40 @@
     };
   }
 
-  function renderMonthPanel(year, month) {
+  // Builds a flat list of length weeksUsed*7 — each entry is a day number or null (blank cell).
+  function buildMonthCells(year, month) {
+    const firstDay = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const weeksUsed = Math.ceil((firstDay + daysInMonth) / 7);
+    const cells = [];
+    for (let i = 0; i < firstDay; i++) cells.push(null);
+    for (let d = 1; d <= daysInMonth; d++) cells.push(d);
+    while (cells.length < weeksUsed * 7) cells.push(null);
+    return { weeksUsed, cells };
+  }
+
+  function dayRangeLabel(cellsSlice) {
+    const days = cellsSlice.filter(c => c !== null);
+    if (!days.length) return '';
+    return days.length === 1 ? `Day ${days[0]}` : `${days[0]} – ${days[days.length - 1]}`;
+  }
+
+  function buildGridPanel(year, month, cellsSlice, weeksInPage, subtitleText) {
     const panel = document.createElement('section');
     panel.className = 'month-panel';
+    panel.dataset.weeks = String(weeksInPage);
 
     const title = document.createElement('div');
     title.className = 'month-title';
     title.textContent = `${MONTHS[month]} ${year}`;
     panel.appendChild(title);
+
+    if (subtitleText) {
+      const sub = document.createElement('div');
+      sub.className = 'month-subtitle';
+      sub.textContent = subtitleText;
+      panel.appendChild(sub);
+    }
 
     const grid = document.createElement('div');
     grid.className = 'cal-grid';
@@ -1159,28 +1202,24 @@
 
     const body = document.createElement('div');
     body.className = 'cal-body';
+    body.dataset.weeks = String(weeksInPage);
+    body.style.gridTemplateRows = `repeat(${weeksInPage}, minmax(0, 1fr))`;
 
-    const firstDay = new Date(year, month, 1).getDay();
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-    const weeksUsed = Math.ceil((firstDay + daysInMonth) / 7);
-    body.dataset.weeks = String(weeksUsed);
-    panel.dataset.weeks = String(weeksUsed);
     const tStr = todayStr();
 
-    for (let i = 0; i < firstDay; i++) {
-      const c = document.createElement('div');
-      c.className = 'cell empty';
-      body.appendChild(c);
-    }
-
-    for (let d = 1; d <= daysInMonth; d++) {
-      const ds = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    cellsSlice.forEach(dayNum => {
       const cell = document.createElement('div');
+      if (dayNum === null) {
+        cell.className = 'cell empty';
+        body.appendChild(cell);
+        return;
+      }
+      const ds = `${year}-${String(month+1).padStart(2,'0')}-${String(dayNum).padStart(2,'0')}`;
       cell.className = 'cell' + (ds === tStr ? ' today-cell' : '');
 
       const dn = document.createElement('div');
       dn.className = 'dnum';
-      dn.innerHTML = ds === tStr ? `<span>${d}</span>` : `${d}`;
+      dn.innerHTML = ds === tStr ? `<span>${dayNum}</span>` : `${dayNum}`;
       cell.appendChild(dn);
 
       const entries = schedule.filter(e => e.dateStr === ds);
@@ -1207,15 +1246,7 @@
       });
 
       body.appendChild(cell);
-    }
-
-    const totalCells = weeksUsed * 7;
-    const trailingCells = totalCells - (firstDay + daysInMonth);
-    for (let i = 0; i < trailingCells; i++) {
-      const c = document.createElement('div');
-      c.className = 'cell empty';
-      body.appendChild(c);
-    }
+    });
 
     grid.appendChild(body);
     panel.appendChild(grid);
@@ -1227,6 +1258,23 @@
     return panel;
   }
 
+  // Every month is always split into two printed pages/panels (roughly half the weeks each)
+  // so cells have more room and the auto-fit font doesn't need to shrink as much.
+  function renderMonthPages(year, month) {
+    const { weeksUsed, cells } = buildMonthCells(year, month);
+    const splitRow = Math.ceil(weeksUsed / 2);
+    const page1Cells = cells.slice(0, splitRow * 7);
+    const page2Cells = cells.slice(splitRow * 7);
+    const page1Weeks = splitRow;
+    const page2Weeks = weeksUsed - splitRow;
+
+    const panels = [buildGridPanel(year, month, page1Cells, page1Weeks, dayRangeLabel(page1Cells))];
+    if (page2Weeks > 0) {
+      panels.push(buildGridPanel(year, month, page2Cells, page2Weeks, dayRangeLabel(page2Cells)));
+    }
+    return panels;
+  }
+
   function renderAllMonths() {
     const container = document.getElementById('months-container');
     container.innerHTML = '';
@@ -1236,7 +1284,7 @@
     let cursor = new Date(bounds.start.getFullYear(), bounds.start.getMonth(), 1);
     const endKey = `${bounds.end.getFullYear()}-${bounds.end.getMonth()}`;
     while (`${cursor.getFullYear()}-${cursor.getMonth()}` <= endKey) {
-      container.appendChild(renderMonthPanel(cursor.getFullYear(), cursor.getMonth()));
+      renderMonthPages(cursor.getFullYear(), cursor.getMonth()).forEach(p => container.appendChild(p));
       cursor.setMonth(cursor.getMonth() + 1);
     }
     requestAnimationFrame(() => {
@@ -1250,7 +1298,7 @@
   const _PGRID  = 7.10 * 96;   // total grid height in CSS px
   const _PHDR   = 28;           // day-header row height in CSS px
   const _PPAD   = 9;            // cell padding top+bottom in CSS px
-  const _PDNUM  = { 4: 13, 5: 12, 6: 11 }; // approx dnum height by week count
+  const _PDNUM  = { 2: 19, 3: 17 }; // approx dnum height (px) by rows-per-page (always 2 or 3 now)
   // Print base font (10pt) is ~1.21× larger than screen base (0.69rem≈11px),
   // so multiply measured screen heights by this ratio to estimate print heights.
   const _PSCALE = 1.21;
@@ -1273,8 +1321,7 @@
         }
         const contentRowCount = rowHasContent.filter(Boolean).length || 1;
         const emptyRowCount   = wks - contentRowCount;
-        const compactRowH     = dnumH + _PPAD; // just day number + padding
-        const totalForContent = _PGRID - _PHDR - emptyRowCount * compactRowH;
+        const totalForContent = _PGRID - _PHDR - emptyRowCount * COMPACT_ROW_H;
         const contentRowH     = totalForContent / contentRowCount;
         availForContentRow    = contentRowH - _PPAD - dnumH - 2;
       } else {
