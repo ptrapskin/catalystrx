@@ -1303,6 +1303,32 @@
   // so multiply measured screen heights by this ratio to estimate print heights.
   const _PSCALE = 1.21;
 
+  // Column width never changes with row height (7 fixed columns), so growing a font
+  // to fill a tall row can force a single word wider than its column, triggering an
+  // ugly mid-word break. Measure the longest word and never scale past the size where
+  // it would overflow the element's own width.
+  let _measureCanvasCtx;
+  function measureTextWidth(text, fontPx, fontWeight, fontFamily) {
+    if (!_measureCanvasCtx) _measureCanvasCtx = document.createElement('canvas').getContext('2d');
+    _measureCanvasCtx.font = `${fontWeight} ${fontPx}px ${fontFamily}`;
+    return _measureCanvasCtx.measureText(text).width;
+  }
+
+  function longestWord(text) {
+    return (text || '').split(/\s+/).reduce((a, w) => (w.length > a.length ? w : a), '');
+  }
+
+  function maxFontSizeForWidth(el, fontSizeFallback) {
+    const word = longestWord(el.textContent);
+    const availWidth = el.clientWidth;
+    if (!word || !availWidth) return fontSizeFallback;
+    const cs = getComputedStyle(el);
+    const refSize = 16;
+    const naturalWidth = measureTextWidth(word, refSize, cs.fontWeight, cs.fontFamily);
+    if (naturalWidth <= 0) return fontSizeFallback;
+    return (availWidth / naturalWidth) * refSize * 0.94;
+  }
+
   function fitCellsForPrint() {
     document.querySelectorAll('.month-panel').forEach(panel => {
       const wks  = parseInt(panel.dataset.weeks) || 5;
@@ -1349,18 +1375,23 @@
 
         if (screenAvail <= 0 || contentH <= 0) return;
 
-        const MAX_FS = 18; // px — hard cap to prevent runaway scaling
+        // Hard cap on font growth, expressed relative to the available box height so it
+        // stays sane as row/page sizing changes, instead of a stale fixed pixel value.
+        const MAX_FS = Math.min(34, availForContentRow * 0.4);
         const printRatio  = (availForContentRow / (contentH * _PSCALE)) * 0.93;
         const screenRatio = (screenAvail / contentH) * 0.93;
         let ratio = Math.min(printRatio, screenRatio);
 
         if (Math.abs(ratio - 1) < 0.05) return;
 
-        // Apply scaled font size, capped at MAX_FS
+        // Apply scaled font size, capped at MAX_FS and at the width a single word allows
         blocks.forEach(b => {
           [b, ...b.querySelectorAll('.med-name, .instruction-line')].forEach(el => {
             const fs    = parseFloat(getComputedStyle(el).fontSize);
-            const newFs = ratio > 1 ? Math.min(fs * ratio, MAX_FS) : Math.max(6, fs * ratio);
+            let newFs = ratio > 1 ? Math.min(fs * ratio, MAX_FS) : Math.max(6, fs * ratio);
+            if (ratio > 1 && el !== b) {
+              newFs = Math.min(newFs, maxFontSizeForWidth(el, newFs));
+            }
             el.style.setProperty('font-size', newFs + 'px', 'important');
           });
         });
