@@ -1343,8 +1343,8 @@
     if (!bounds) return;
 
     let cursor = new Date(bounds.start.getFullYear(), bounds.start.getMonth(), 1);
-    const endKey = `${bounds.end.getFullYear()}-${bounds.end.getMonth()}`;
-    while (`${cursor.getFullYear()}-${cursor.getMonth()}` <= endKey) {
+    const endKey = bounds.end.getFullYear() * 12 + bounds.end.getMonth();
+    while (cursor.getFullYear() * 12 + cursor.getMonth() <= endKey) {
       renderMonthPages(cursor.getFullYear(), cursor.getMonth()).forEach(p => container.appendChild(p));
       cursor.setMonth(cursor.getMonth() + 1);
     }
