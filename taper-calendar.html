@@ -91,14 +91,15 @@
       display: block; font-size: 0.68rem; font-weight: 600;
       text-transform: uppercase; letter-spacing: 0.5px; color: #5f6c7a; margin-bottom: 4px;
     }
-    .field input {
+    .field input, .field select {
       width: 100%; padding: 9px 11px;
       border: 1.5px solid rgba(31, 42, 55, 0.15); border-radius: 6px;
       font-family: Arial, Helvetica, sans-serif; font-size: 0.88rem; color: #1f2a37;
       background: #fff; outline: none;
       transition: border-color 0.15s;
     }
-    .field input:focus { border-color: #2f6c8f; }
+    .field input:focus, .field select:focus { border-color: #2f6c8f; }
+    .field select { height: 36px; padding-top: 0; padding-bottom: 0; cursor: pointer; }
 
     /* ── Steps table ─────────────────────── */
     .taper-label {
@@ -443,6 +444,7 @@
     }
 
     /* ── Disclaimer full ─────────────────── */
+    .print-footer { font-size: 0.72rem; line-height: 1.3; color: #4a5563; margin-top: 4px; }
     /* ── Print ───────────────────────────── */
     @media print {
       @page { size: letter landscape; margin: 0.18in; }
@@ -523,7 +525,7 @@
       .print-footer { display: none; }
       .print-footer {
         display: block !important;
-        font-size: 10pt !important;
+        font-size: 8pt !important;
         line-height: 1.15 !important;
         color: #000 !important;
         text-align: center !important;
@@ -599,14 +601,15 @@
         <input type="text" id="med-name" placeholder="e.g. Prednisone" />
       </div>
       <div class="field">
-        <label>Unit Strength</label>
+        <label id="tab-strength-label">Unit Strength</label>
         <input type="text" id="tab-strength" placeholder="e.g. 5 mg" oninput="refreshSteps()" />
       </div>
       <div class="field">
         <label>Dosage Form</label>
-        <select id="dosage-form" onchange="refreshSteps()">
+        <select id="dosage-form" onchange="updateStrengthField(); refreshSteps()">
           <option value="tablet" selected>Tablet</option>
           <option value="capsule">Capsule</option>
+          <option value="liquid">Oral liquid</option>
         </select>
       </div>
       <div class="field">
@@ -646,7 +649,7 @@
       <div class="directions-section">
         <div class="directions-title">Creating a Calendar</div>
         <ol>
-          <li>Enter the medication name, unit strength, dosage form, and start date.</li>
+          <li>Enter the medication name, unit strength (or concentration for oral liquids, e.g. 5 mg/5 mL), dosage form, and start date.</li>
           <li>For each taper step, check the times of day a dose is taken, enter the dose for each time, and enter how many days that step lasts. Use <strong>+ Add Step</strong> to add more steps.</li>
           <li>Click <strong>Generate Calendar →</strong> to build the printable calendar.</li>
         </ol>
@@ -655,7 +658,7 @@
         <div class="directions-title">Adjusting the Calendar &amp; Print Size</div>
         <ul>
           <li><strong>Shading On/Off</strong> — toggles the color coding used to tell taper steps apart.</li>
-          <li><strong>Simple View / Full View</strong> — Simple View shows a condensed dose line; Full View spells out the tablet count and strength.</li>
+          <li><strong>Simple View / Full View</strong> — Simple View shows a condensed dose line; Full View spells out the tablet, capsule, or mL amount and strength.</li>
           <li><strong>Compact Rows</strong> — shrinks empty calendar weeks so days with doses get more room, useful when printing.</li>
           <li><strong>Print</strong> — opens the print dialog. Each month automatically splits across two pages so the text prints large and readable.</li>
         </ul>
@@ -729,6 +732,7 @@
     document.getElementById('med-name').value = '';
     document.getElementById('tab-strength').value = '';
     document.getElementById('dosage-form').value = 'tablet';
+    updateStrengthField();
     document.getElementById('start-date').value = todayStr();
     document.getElementById('steps-body').innerHTML = '';
     document.getElementById('months-container').innerHTML = '';
@@ -748,6 +752,7 @@
     document.getElementById('med-name').value = 'Prednisone';
     document.getElementById('tab-strength').value = '5 mg';
     document.getElementById('dosage-form').value = 'tablet';
+    updateStrengthField();
     document.getElementById('steps-body').innerHTML = '';
     steps = [];
     stepCount = 0;
@@ -884,7 +889,34 @@
     return el ? el.value : 'tablet';
   }
 
+  function updateStrengthField() {
+    const isLiquid = getDosageForm() === 'liquid';
+    document.getElementById('tab-strength-label').textContent = isLiquid ? 'Concentration' : 'Unit Strength';
+    document.getElementById('tab-strength').placeholder = isLiquid ? 'e.g. 5 mg/5 mL' : 'e.g. 5 mg';
+  }
+
+  // mg per unit (tablet/capsule) or mg per mL (liquid). Liquids accept "5 mg/5 mL",
+  // "1 mg/mL" or a bare number (taken as mg/mL).
+  function parseStrengthMg(str, form) {
+    const mg = parseFloat(str);
+    if (!isFinite(mg) || mg <= 0) return null;
+    if (form !== 'liquid') return mg;
+    const m = String(str).match(/\/\s*([\d.]*)\s*m?l?/i);
+    const ml = m && m[1] ? parseFloat(m[1]) : 1;
+    return isFinite(ml) && ml > 0 ? mg / ml : null;
+  }
+
+  // Doses under 1 mg read more clearly in mcg (0.25 mg → 250 mcg)
+  function formatMgOrMcg(mg) {
+    return mg < 1 ? `${formatNumber(Math.round(mg * 1000 * 100) / 100)} mcg` : `${formatNumber(mg)} mg`;
+  }
+
+  function liquidConcLabel(raw) {
+    return raw.includes('/') ? raw : `${formatNumber(parseFloat(raw))} mg/mL`;
+  }
+
   function unitWord(count, form) {
+    if (form === 'liquid') return 'mL';
     const isOne = Math.abs(Number(count) - 1) < 0.000001;
     return form === 'capsule'
       ? (isOne ? 'capsule' : 'capsules')
@@ -894,6 +926,8 @@
   function formatDoseUnitCount(n, style = 'label', form = 'tablet') {
     if (n === null || !isFinite(n)) return '';
     const value = Number(n);
+    // Liquids round to the nearest 0.1 mL (smallest practical syringe increment)
+    if (form === 'liquid') return `${formatNumber(Math.round(value * 10) / 10)} mL`;
     const whole = Math.trunc(value);
     const frac = Math.abs(value - whole);
     if (Math.abs(frac - 0.5) < 0.000001) {
@@ -925,6 +959,7 @@
 
   function tabletStrengthLabel(entry) {
     const raw = entry && entry.tabStr ? String(entry.tabStr).trim() : '';
+    if (entry.dosageForm === 'liquid') return raw ? liquidConcLabel(raw) : 'concentration not entered';
     const parsed = raw ? parseFloat(raw) : NaN;
     if (isFinite(parsed)) return `${formatNumber(parsed)} mg each`;
     if (raw) return `${raw} each`;
@@ -935,13 +970,21 @@
     const lead = label ? `${timeLead(label)} ` : '';
     const dosageForm = entry && entry.dosageForm ? entry.dosageForm : getDosageForm();
     const medPart = includeMedName ? `${entry.medName} — ` : '';
+    // A volume that rounds to 0 mL can't be measured — show the dose with a warning instead
+    if (dosageForm === 'liquid' && entry.tabsPerDose != null && Math.round(entry.tabsPerDose * 10) === 0) {
+      return `${medPart}${lead}Take ${formatMgOrMcg(entry.dose)} (volume under 0.1 mL — check concentration)`.trim();
+    }
     if (simpleMode) {
       const unitPart = entry.tabsPerDose !== null && entry.tabsPerDose !== undefined
         ? `Take ${formatDoseUnitCount(entry.tabsPerDose, 'label', dosageForm)}`
         : `Take ${formatNumber(entry.dose)} mg`;
       return `${medPart}${lead}${unitPart}`.trim();
     }
-    const unitPart = entry.tabsPerDose !== null && entry.tabsPerDose !== undefined
+    const hasUnits = entry.tabsPerDose !== null && entry.tabsPerDose !== undefined;
+    if (hasUnits && dosageForm === 'liquid') {
+      return `${medPart}${lead}Take ${formatDoseUnitCount(entry.tabsPerDose, 'label', dosageForm)} (${formatMgOrMcg(entry.dose)})`.trim();
+    }
+    const unitPart = hasUnits
       ? `Take ${formatDoseUnitCount(entry.tabsPerDose, 'label', dosageForm)} (${tabletStrengthLabel(entry)}) for a total dose of ${formatNumber(entry.dose)} mg`
       : `Take total dose ${formatNumber(entry.dose)} mg`;
     return `${medPart}${lead}${unitPart}`.trim();
@@ -1096,11 +1139,11 @@
 
   function refreshSteps() {
     const tabStr = document.getElementById('tab-strength').value.trim();
-    const tabMg = parseFloat(tabStr) || null;
+    const dosageForm = getDosageForm();
+    const tabMg = parseStrengthMg(tabStr, dosageForm);
     const startVal = document.getElementById('start-date').value;
     let cursor = startVal ? new Date(startVal + 'T00:00:00') : null;
     const medName = document.getElementById('med-name').value.trim() || 'Medication';
-    const dosageForm = getDosageForm();
 
     steps.forEach(s => {
       const dailyDoseBadge = document.getElementById(`dailydose-${s.id}`);
@@ -1158,7 +1201,7 @@
   function generate() {
     const medName = document.getElementById('med-name').value.trim();
     const tabStr = document.getElementById('tab-strength').value.trim();
-    const tabMg = parseFloat(tabStr) || null;
+    const tabMg = parseStrengthMg(tabStr, getDosageForm());
     const startVal = document.getElementById('start-date').value;
 
     if (!medName) { alert('Please enter the medication name.'); return; }
@@ -1291,8 +1334,9 @@
         const block = document.createElement('div');
         block.className = `dose-block ${stepColorMap[e.stepIdx]}`;
         const lines = Array.isArray(e.lines) ? e.lines : [];
-        const strengthSuffix = simpleMode && e.tabStr && isFinite(parseFloat(e.tabStr))
-          ? ` ${formatNumber(parseFloat(e.tabStr))} mg ${unitWord(1, e.dosageForm)}` : '';
+        const strengthSuffix = !simpleMode || !e.tabStr || !isFinite(parseFloat(e.tabStr)) ? ''
+          : e.dosageForm === 'liquid' ? ` ${liquidConcLabel(e.tabStr)}`
+          : ` ${formatNumber(parseFloat(e.tabStr))} mg ${unitWord(1, e.dosageForm)}`;
         block.innerHTML = `
           <div class="med-name">${escapeHtml(e.medName)}${escapeHtml(strengthSuffix)}</div>
           ${lines.length ? lines.map(line => renderInstructionLine({
